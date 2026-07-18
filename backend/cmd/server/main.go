@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -46,11 +47,18 @@ func main() {
 	app.Use(logger.New())
 
 	// CORS - Allow frontend from configured origins
+	allowOrigins := cfg.AllowedOrigins
+	allowCredentials := allowOrigins != "*" && !strings.Contains(allowOrigins, "*")
+
+	if !allowCredentials {
+		log.Println("CORS: AllowOrigins is wildcard, AllowCredentials set to false")
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.AllowedOrigins,
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Agent-Key",
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 	}))
 
 	// Routes
