@@ -40,10 +40,10 @@ export function LiveViewTab({ deviceId }: Props) {
     sendMouseMove,
     sendMouseDown,
     sendMouseUp,
+    sendDoubleClick,
     sendMouseWheel,
-    sendKeyDown,
-    sendKeyUp,
     handleWSMessage,
+    handleKeyEvent: hookHandleKeyEvent,
   } = useRemoteControl(wsRef, containerRef);
 
   useEffect(() => {
@@ -178,6 +178,14 @@ export function LiveViewTab({ deviceId }: Props) {
     [remoteEnabled, sendMouseMove, sendMouseDown, sendMouseUp]
   );
 
+  const handleDoubleClickEvent = useCallback(
+    (e: React.MouseEvent) => {
+      if (!remoteEnabled) return;
+      sendDoubleClick(e.clientX, e.clientY, getButtonName(e.button));
+    },
+    [remoteEnabled, sendDoubleClick]
+  );
+
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       if (!remoteEnabled) return;
@@ -190,15 +198,9 @@ export function LiveViewTab({ deviceId }: Props) {
   const handleKeyEvent = useCallback(
     (e: React.KeyboardEvent) => {
       if (!remoteEnabled) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.type === "keydown") {
-        sendKeyDown(e.code);
-      } else if (e.type === "keyup") {
-        sendKeyUp(e.code);
-      }
+      hookHandleKeyEvent(e);
     },
-    [remoteEnabled, sendKeyDown, sendKeyUp]
+    [remoteEnabled, hookHandleKeyEvent]
   );
 
   const cursorStyle: React.CSSProperties | undefined = remoteEnabled
@@ -297,6 +299,7 @@ export function LiveViewTab({ deviceId }: Props) {
           onMouseMove={handleMouseEvent}
           onMouseDown={handleMouseEvent}
           onMouseUp={handleMouseEvent}
+          onDoubleClick={handleDoubleClickEvent}
           onWheel={handleWheel}
           onKeyDown={handleKeyEvent}
           onKeyUp={handleKeyEvent}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -135,6 +136,12 @@ func getScreenSize() (int32, int32) {
 func HandleMessage(data []byte) {
 	var pkt controlPacket
 	if err := json.Unmarshal(data, &pkt); err != nil {
+		log.Println("[Remote] Invalid packet:", err)
+		return
+	}
+
+	if pkt.Type == "" {
+		log.Println("[Remote] Packet missing type field")
 		return
 	}
 
@@ -145,6 +152,8 @@ func HandleMessage(data []byte) {
 		handleMouseDown(pkt)
 	case "mouse_up":
 		handleMouseUp(pkt)
+	case "double_click":
+		handleDoubleClick(pkt)
 	case "mouse_wheel":
 		handleMouseWheel(pkt)
 	case "key_down":
@@ -153,6 +162,8 @@ func HandleMessage(data []byte) {
 		handleKeyUp(pkt)
 	case "clipboard":
 		handleClipboard(pkt)
+	default:
+		log.Printf("[Remote] Unknown packet type: %s", pkt.Type)
 	}
 }
 
@@ -291,21 +302,51 @@ func handleMouseUp(pkt controlPacket) {
 	}
 }
 
+func handleDoubleClick(pkt controlPacket) {
+	flags := mouseButtonToFlags(pkt.Button, true)
+	if flags == 0 {
+		return
+	}
+	x := int32(pkt.X)
+	y := int32(pkt.Y)
+	mouseEvent(flags, x, y, 0)
+	time.Sleep(30 * time.Millisecond)
+	mouseEvent(flags ^ 1, 0, 0, 0) // up = flip lowest bit
+	time.Sleep(30 * time.Millisecond)
+	mouseEvent(flags, x, y, 0)
+	time.Sleep(30 * time.Millisecond)
+	mouseEvent(flags ^ 1, 0, 0, 0)
+}
+
 func handleMouseWheel(pkt controlPacket) {
 	mouseEvent(MOUSEEVENTF_WHEEL, 0, 0, uint32(pkt.Delta))
 }
 
 func handleKeyDown(pkt controlPacket) {
 	vk := codeToVK(pkt.Code)
-	if vk != 0 {
-		keyboardEvent(vk, KEYEVENTF_KEYDOWN)
+	if vk == 0 {
+		return
 	}
+	for _, m := range pkt.Modifiers {
+		mkVk := codeToVK(m)
+		if mkVk != 0 {
+			keyboardEvent(mkVk, KEYEVENTF_KEYDOWN)
+		}
+	}
+	keyboardEvent(vk, KEYEVENTF_KEYDOWN)
 }
 
 func handleKeyUp(pkt controlPacket) {
 	vk := codeToVK(pkt.Code)
-	if vk != 0 {
-		keyboardEvent(vk, KEYEVENTF_KEYUP)
+	if vk == 0 {
+		return
+	}
+	keyboardEvent(vk, KEYEVENTF_KEYUP)
+	for i := len(pkt.Modifiers) - 1; i >= 0; i-- {
+		mkVk := codeToVK(pkt.Modifiers[i])
+		if mkVk != 0 {
+			keyboardEvent(mkVk, KEYEVENTF_KEYUP)
+		}
 	}
 }
 

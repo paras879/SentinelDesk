@@ -1,6 +1,7 @@
 package liveview
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/gofiber/contrib/websocket"
@@ -51,6 +52,15 @@ func HandleAdminView(c *websocket.Conn) {
 			break
 		}
 
+		var pkt struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(msg, &pkt); err != nil || pkt.Type == "" {
+			continue
+		}
+
+		log.Printf("[Control] device=%s viewer=%s type=%s", deviceID, viewerID, pkt.Type)
+
 		stream.mu.RLock()
 		agent := stream.Agent
 		stream.mu.RUnlock()
@@ -59,6 +69,7 @@ func HandleAdminView(c *websocket.Conn) {
 			select {
 			case stream.ControlChan <- msg:
 			default:
+				log.Printf("[Control] device=%s control channel full, dropping event", deviceID)
 			}
 		}
 	}

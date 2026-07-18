@@ -23,6 +23,15 @@ export function useRemoteControl(
   const moveInterval = 1000 / 60;
   const pendingMoveRef = useRef<{ x: number; y: number } | null>(null);
 
+  const activeModifiers = useRef<Set<string>>(new Set());
+
+  const modifierKeys = new Set([
+    "ControlLeft", "ControlRight",
+    "ShiftLeft", "ShiftRight",
+    "AltLeft", "AltRight",
+    "MetaLeft", "MetaRight",
+  ]);
+
   const send = useCallback(
     (msg: object) => {
       if (wsRef.current?.readyState !== WebSocket.OPEN) return;
@@ -37,8 +46,9 @@ export function useRemoteControl(
     (clientX: number, clientY: number) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return { x: 0, y: 0 };
-      const x = Math.round(((clientX - rect.left) / rect.width) * screenInfo.width);
-      const y = Math.round(((clientY - rect.top) / rect.height) * screenInfo.height);
+      const dpr = window.devicePixelRatio || 1;
+      const x = Math.round(((clientX - rect.left) / rect.width) * screenInfo.width * dpr);
+      const y = Math.round(((clientY - rect.top) / rect.height) * screenInfo.height * dpr);
       return { x, y };
     },
     [containerRef, screenInfo]
@@ -86,6 +96,14 @@ export function useRemoteControl(
     [scaleCoords, send]
   );
 
+  const sendDoubleClick = useCallback(
+    (clientX: number, clientY: number, button: string) => {
+      const { x, y } = scaleCoords(clientX, clientY);
+      send({ type: "double_click", button, x, y });
+    },
+    [scaleCoords, send]
+  );
+
   const sendMouseWheel = useCallback(
     (clientX: number, clientY: number, delta: number) => {
       const { x, y } = scaleCoords(clientX, clientY);
@@ -95,15 +113,59 @@ export function useRemoteControl(
   );
 
   const sendKeyDown = useCallback((code: string) => {
-    send({ type: "key_down", code });
+    const isModifier = modifierKeys.has(code);
+    const modifiers = isModifier ? [] : Array.from(activeModifiers.current);
+    send({ type: "key_down", code, modifiers });
+    if (!isModifier) {
+      for (const m of modifiers) {
+        send({ type: "key_up", code: m, modifiers: [] });
+      }
+      send({ type: "key_up", code, modifiers: [] });
+      for (const m of modifiers) {
+        send({ type: "key_down", code: m, modifiers: [] });
+      }
+    }
   }, [send]);
 
   const sendKeyUp = useCallback((code: string) => {
-    send({ type: "key_up", code });
+    const isModifier = modifierKeys.has(code);
+    const modifiers = isModifier ? [] : Array.from(activeModifiers.current);
+    send({ type: "key_up", code, modifiers });
   }, [send]);
 
   const enable = useCallback(() => setEnabled(true), []);
-  const disable = useCallback(() => setEnabled(false), []);
+  const disable = useCallback(() => {
+    setEnabled(false);
+    activeModifiers.current.clear();
+  }, []);
+
+  const handleKeyEvent = useCallback((e: React.KeyboardEvent) => {
+    if (!enabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const code = e.code;
+    const isModifier = modifierKeys.has(code);
+
+    if (isModifier) {
+      if (e.type === "keydown") {
+        activeModifiers.current.add(code);
+        send({ type: "key_down", code, modifiers: [] });
+      } else {
+        activeModifiers.current.delete(code);
+        send({ type: "key_up", code, modifiers: [] });
+      }
+      return;
+    }
+
+    if (e.type === "keydown") {
+      const mods = Array.from(activeModifiers.current);
+      send({ type: "key_down", code, modifiers: mods });
+    } else {
+      const mods = Array.from(activeModifiers.current);
+      send({ type: "key_up", code, modifiers: mods });
+    }
+  }, [enabled, send]);
 
   const handleWSMessage = useCallback((data: string) => {
     try {
@@ -124,6 +186,17 @@ export function useRemoteControl(
     return () => clearInterval(id);
   }, [flushMove]);
 
+  useEffect(() => {
+    const handleGlobalKeyUp = (e: KeyboardEvent) => {
+      const code = e.code;
+      if (modifierKeys.has(code)) {
+        activeModifiers.current.delete(code);
+      }
+    };
+    window.addEventListener("keyup", handleGlobalKeyUp);
+    return () => window.removeEventListener("keyup", handleGlobalKeyUp);
+  }, []);
+
   return {
     enabled,
     enable,
@@ -136,9 +209,11 @@ export function useRemoteControl(
     sendMouseMove,
     sendMouseDown,
     sendMouseUp,
+    sendDoubleClick,
     sendMouseWheel,
     sendKeyDown,
     sendKeyUp,
     handleWSMessage,
+    handleKeyEvent,
   };
 }
