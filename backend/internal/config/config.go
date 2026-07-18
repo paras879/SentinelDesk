@@ -40,7 +40,7 @@ func LoadConfig() *Config {
 	return &Config{
 		// Application
 		AppName:    getEnv("APP_NAME", "SentinelDesk"),
-		AppPort:    getEnv("APP_PORT", "8080"),
+		AppPort:    getEnv("PORT", "8080"),
 		AppEnv:     getEnv("APP_ENV", "development"),
 		AppVersion: getEnv("APP_VERSION", "1.0.0"),
 
