@@ -10,36 +10,27 @@ import (
 	"sentineldesk/agent/internal/system"
 )
 
-func logRegistrationURL() {
-	cfg := config.Get()
-	registrationURL := cfg.ServerURL + "/api/v1/devices/register"
-	log.Printf("Config File Path: config.yaml")
-	log.Printf("Loaded Server URL: %s", cfg.ServerURL)
-	log.Printf("Final Registration URL: %s", registrationURL)
-}
-
 type RegisterRequest struct {
-	DeviceID        string                `json:"device_id"`
-	DeviceName      string                `json:"device_name"`
-	Hostname        string                `json:"hostname"`
-	Username        string                `json:"username"`
-	OS              string                `json:"os"`
-	OSVersion       string                `json:"os_version"`
-	IPAddress       string                `json:"ip_address"`
-	MACAddress      string                `json:"mac_address"`
-	ConnectedSubnet string                `json:"connected_subnet"`
+	DeviceID        string                  `json:"device_id"`
+	DeviceName      string                  `json:"device_name"`
+	Hostname        string                  `json:"hostname"`
+	Username        string                  `json:"username"`
+	OS              string                  `json:"os"`
+	OSVersion       string                  `json:"os_version"`
+	IPAddress       string                  `json:"ip_address"`
+	MACAddress      string                  `json:"mac_address"`
+	ConnectedSubnet string                  `json:"connected_subnet"`
 	NetworkAdapters []system.NetworkAdapter `json:"network_adapters"`
-	DefaultGateway  string                `json:"default_gateway"`
-	NetworkGroupID  string                `json:"network_group_id"`
+	DefaultGateway  string                  `json:"default_gateway"`
+	NetworkGroupID  string                  `json:"network_group_id"`
 }
 
 func RegisterDevice() error {
-
-	logRegistrationURL()
+	endpoint := config.Get().ServerURL + "/api/v1/devices/register"
 
 	info, err := system.GetSystemInfo()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get system info: %w", err)
 	}
 
 	client := api.NewClient()
@@ -64,19 +55,16 @@ func RegisterDevice() error {
 		Post("/api/v1/devices/register")
 
 	if err != nil {
-		return fmt.Errorf("cannot reach backend at %s — %v", config.Get().ServerURL, err)
+		return fmt.Errorf("cannot reach backend at %s — %w", endpoint, err)
 	}
 
 	switch resp.StatusCode() {
-
 	case 200:
-		fmt.Println("✓ Device already registered, record updated.")
-
+		log.Println("[INFO] Device already registered, record updated")
 	case 201:
-		fmt.Println("✓ Device registered successfully.")
-
+		log.Println("[INFO] Device registered successfully")
 	default:
-		return fmt.Errorf("registration failed: %s — %s", resp.Status(), string(resp.Body()))
+		return fmt.Errorf("registration failed [%s] %s — endpoint: %s", resp.Status(), string(resp.Body()), endpoint)
 	}
 
 	return nil

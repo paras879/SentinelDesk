@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"sentineldesk/agent/internal/api"
+	"sentineldesk/agent/internal/config"
 	"sentineldesk/agent/internal/deviceid"
 	"sentineldesk/agent/internal/system"
 )
@@ -19,10 +20,11 @@ type HeartbeatRequest struct {
 }
 
 func SendHeartbeat() error {
+	endpoint := config.Get().ServerURL + "/api/v1/devices/heartbeat"
 
 	info, err := system.GetSystemInfo()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get system info: %w", err)
 	}
 
 	client := api.NewClient()
@@ -42,14 +44,12 @@ func SendHeartbeat() error {
 		Post("/api/v1/devices/heartbeat")
 
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot reach backend at %s — %w", endpoint, err)
 	}
 
 	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-		return fmt.Errorf("heartbeat rejected: %s", resp.Status())
+		return fmt.Errorf("heartbeat rejected [%s] %s — endpoint: %s", resp.Status(), string(resp.Body()), endpoint)
 	}
-
-	fmt.Println("Heartbeat:", resp.Status())
 
 	return nil
 }

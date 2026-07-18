@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"sentineldesk/agent/internal/api"
+	"sentineldesk/agent/internal/config"
 	"sentineldesk/agent/internal/deviceid"
 )
 
@@ -13,6 +14,7 @@ type SendSoftwareRequest struct {
 }
 
 func SendSoftware(software []Software) error {
+	endpoint := config.Get().ServerURL + "/api/v1/devices/software"
 
 	client := api.NewClient()
 
@@ -26,10 +28,12 @@ func SendSoftware(software []Software) error {
 		Post("/api/v1/devices/software")
 
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot reach backend at %s — %w", endpoint, err)
 	}
 
-	fmt.Println("SoftwareInventory:", resp.Status())
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return fmt.Errorf("software inventory rejected [%s] %s — endpoint: %s", resp.Status(), string(resp.Body()), endpoint)
+	}
 
 	return nil
 }
