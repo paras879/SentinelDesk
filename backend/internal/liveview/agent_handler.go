@@ -52,6 +52,7 @@ func HandleAgentStream(c *websocket.Conn) {
 		stream.mu.Lock()
 		if stream.Agent == c {
 			stream.Agent = nil
+			stream.LatestFrame = nil
 		}
 		viewersLeft := make([]*websocket.Conn, 0, len(stream.Viewers))
 		for _, v := range stream.Viewers {
@@ -82,15 +83,22 @@ func HandleAgentStream(c *websocket.Conn) {
 			continue
 		}
 
-		stream.mu.RLock()
+		stream.mu.Lock()
+		stream.LatestFrame = data
 		var failed []string
 		for viewerID, viewer := range stream.Viewers {
+			select {
+			case <-done:
+				stream.mu.Unlock()
+				return
+			default:
+			}
 			if err := viewer.WriteMessage(websocket.BinaryMessage, data); err != nil {
 				viewer.Close()
 				failed = append(failed, viewerID)
 			}
 		}
-		stream.mu.RUnlock()
+		stream.mu.Unlock()
 
 		if len(failed) > 0 {
 			stream.mu.Lock()

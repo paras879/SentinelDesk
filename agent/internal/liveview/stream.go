@@ -3,7 +3,10 @@ package liveview
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -21,13 +24,31 @@ func serverToWSURL(serverURL string) string {
 	return "ws://" + strings.TrimPrefix(serverURL, "http://")
 }
 
+type framePacket struct {
+	data []byte
+}
+
 type Streamer struct {
-	capturer *Capturer
+	capturer       *Capturer
+	frameChan      chan *framePacket
+	quality        int32
+	targetFPS      int32
+	scaleWidth     int32
+	scaleHeight    int32
+	sendTimeEWMA   int64
+	encodeTimeEWMA int64
+	lastFrameSize  int64
+	mu             sync.Mutex
 }
 
 func NewStreamer() *Streamer {
 	return &Streamer{
-		capturer: NewCapturer(1280, 720),
+		capturer:    NewCapturer(1280, 720),
+		frameChan:   make(chan *framePacket, 1),
+		quality:     70,
+		targetFPS:   20,
+		scaleWidth:  1280,
+		scaleHeight: 720,
 	}
 }
 
@@ -42,7 +63,6 @@ func (s *Streamer) Start() {
 
 func (s *Streamer) stream() error {
 	cfg := config.Get()
-
 	deviceID := deviceid.Get()
 
 	wsURL := serverToWSURL(cfg.ServerURL) + "/ws/live/stream?device_id=" + deviceID
@@ -62,7 +82,6 @@ func (s *Streamer) stream() error {
 	s.capturer.HideDashboard()
 	defer s.capturer.ShowDashboard()
 
-	// Send screen info as first message
 	bounds := screenshot.GetDisplayBounds(0)
 	screenInfo, _ := json.Marshal(map[string]interface{}{
 		"type":   "screen_info",
@@ -73,7 +92,6 @@ func (s *Streamer) stream() error {
 	conn.WriteMessage(websocket.TextMessage, screenInfo)
 	conn.SetWriteDeadline(time.Time{})
 
-	// Reader goroutine for remote control commands
 	go func() {
 		for {
 			_, msg, err := conn.ReadMessage()
@@ -84,26 +102,155 @@ func (s *Streamer) stream() error {
 		}
 	}()
 
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
+	stop := make(chan struct{})
 
-	for range ticker.C {
-		frame, err := s.capturer.Capture()
+	go s.captureLoop(stop)
+	go s.sendLoop(conn, stop)
+
+	<-stop
+	return nil
+}
+
+func (s *Streamer) captureLoop(stop chan struct{}) {
+
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+		}
+
+		start := time.Now()
+
+		q := int(atomic.LoadInt32(&s.quality))
+		w := int(atomic.LoadInt32(&s.scaleWidth))
+		h := int(atomic.LoadInt32(&s.scaleHeight))
+
+		s.mu.Lock()
+		if s.capturer.width != w || s.capturer.height != h {
+			s.capturer.Resize(w, h)
+		}
+		s.mu.Unlock()
+
+		frame, err := s.capturer.Capture(q)
 		if err != nil {
 			log.Println("LiveView capture error:", err)
-			continue
-		}
-		if frame == nil {
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
-		if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
-			return err
+		if frame != nil {
+			pkt := &framePacket{data: frame}
+			atomic.StoreInt64(&s.lastFrameSize, int64(len(frame)))
+
+			select {
+			case <-s.frameChan:
+			default:
+			}
+			s.frameChan <- pkt
+
+			elapsed := time.Since(start).Microseconds()
+			s.updateEncodeEWMA(elapsed)
 		}
-		if err := conn.WriteMessage(websocket.BinaryMessage, frame); err != nil {
-			return err
+
+		target := float64(atomic.LoadInt32(&s.targetFPS))
+		if target < 1 {
+			target = 10
+		}
+		interval := time.Duration(float64(time.Second) / target)
+		elapsed := time.Since(start)
+		if elapsed < interval {
+			time.Sleep(interval - elapsed)
 		}
 	}
+}
 
-	return nil
+func (s *Streamer) sendLoop(conn *websocket.Conn, stop chan struct{}) {
+	defer close(stop)
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stop:
+			return
+		case pkt := <-s.frameChan:
+			start := time.Now()
+			conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+			if err := conn.WriteMessage(websocket.BinaryMessage, pkt.data); err != nil {
+				return
+			}
+			elapsed := time.Since(start).Microseconds()
+			s.updateSendEWMA(elapsed)
+		case <-ticker.C:
+			s.adapt()
+		}
+	}
+}
+
+func (s *Streamer) updateEncodeEWMA(elapsed int64) {
+	old := atomic.LoadInt64(&s.encodeTimeEWMA)
+	if old == 0 {
+		atomic.StoreInt64(&s.encodeTimeEWMA, elapsed)
+		return
+	}
+	atomic.StoreInt64(&s.encodeTimeEWMA, int64(0.3*float64(elapsed)+0.7*float64(old)))
+}
+
+func (s *Streamer) updateSendEWMA(elapsed int64) {
+	old := atomic.LoadInt64(&s.sendTimeEWMA)
+	if old == 0 {
+		atomic.StoreInt64(&s.sendTimeEWMA, elapsed)
+		return
+	}
+	atomic.StoreInt64(&s.sendTimeEWMA, int64(0.3*float64(elapsed)+0.7*float64(old)))
+}
+
+func (s *Streamer) adapt() {
+	sendUs := atomic.LoadInt64(&s.sendTimeEWMA)
+	encodeUs := atomic.LoadInt64(&s.encodeTimeEWMA)
+	frameSize := atomic.LoadInt64(&s.lastFrameSize)
+
+	totalUs := sendUs + encodeUs
+	if totalUs < 1 {
+		return
+	}
+
+	// Target: total time (encode + send) should be ~50% of frame budget
+	// 20 FPS → 50ms budget → 25ms target = 25000µs
+	idealBudget := 25000.0
+
+	ratio := float64(idealBudget) / float64(totalUs)
+
+	currentFPS := atomic.LoadInt32(&s.targetFPS)
+	currentQuality := atomic.LoadInt32(&s.quality)
+
+	if ratio > 1.5 {
+		newFPS := int32(math.Min(20, float64(currentFPS)*1.2))
+		atomic.StoreInt32(&s.targetFPS, newFPS)
+
+		newQ := int32(math.Min(85, float64(currentQuality)*1.05))
+		atomic.StoreInt32(&s.quality, newQ)
+
+		if frameSize < 30000 && newQ >= 80 {
+			nw := int32(math.Min(1920, float64(atomic.LoadInt32(&s.scaleWidth))*1.2))
+			nh := nw * 9 / 16
+			atomic.StoreInt32(&s.scaleWidth, nw)
+			atomic.StoreInt32(&s.scaleHeight, nh)
+		}
+	} else if ratio < 0.5 {
+		newQ := int32(math.Max(60, float64(currentQuality)*0.9))
+		atomic.StoreInt32(&s.quality, newQ)
+
+		if currentQuality <= 65 {
+			newFPS := int32(math.Max(8, float64(currentFPS)*0.8))
+			atomic.StoreInt32(&s.targetFPS, newFPS)
+
+			nw := int32(math.Max(640, float64(atomic.LoadInt32(&s.scaleWidth))*0.8))
+			nh := nw * 9 / 16
+			atomic.StoreInt32(&s.scaleWidth, nw)
+			atomic.StoreInt32(&s.scaleHeight, nh)
+		}
+	}
 }

@@ -14,14 +14,17 @@ func HandleAdminView(c *websocket.Conn) {
 
 	stream := GlobalHub.GetOrCreate(deviceID)
 
-	// Use the connection's remote address as a unique viewer key so that
-	// multiple viewers can watch the same device simultaneously.
 	viewerID := c.RemoteAddr().String()
 
 	stream.mu.Lock()
 	stream.Viewers[viewerID] = c
 	agentConnected := stream.Agent != nil
+	latestFrame := stream.LatestFrame
 	stream.mu.Unlock()
+
+	if latestFrame != nil {
+		c.WriteMessage(websocket.BinaryMessage, latestFrame)
+	}
 
 	if agentConnected {
 		c.WriteJSON(map[string]string{"type": "status", "agent_connected": "true"})

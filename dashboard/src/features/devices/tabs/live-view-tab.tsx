@@ -15,15 +15,19 @@ type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export function LiveViewTab({ deviceId }: Props) {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
-  const [fps, setFps] = useState(0);
-  const [resolution, setResolution] = useState("");
+  const [displayFps, setDisplayFps] = useState(0);
+  const [displayResolution, setDisplayResolution] = useState("");
   const [lastFrameTime, setLastFrameTime] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const frameTimesRef = useRef<number[]>([]);
-  const currentUrlRef = useRef<string>("");
+
+  const frameTimestamps = useRef<number[]>([]);
+  const currentBlobUrl = useRef<string>("");
+  const frameCount = useRef(0);
+  const lastFpsUpdate = useRef(0);
+  const lastSeq = useRef(0);
 
   const {
     enabled: remoteEnabled,
@@ -44,8 +48,8 @@ export function LiveViewTab({ deviceId }: Props) {
 
   useEffect(() => {
     return () => {
-      if (currentUrlRef.current) {
-        URL.revokeObjectURL(currentUrlRef.current);
+      if (currentBlobUrl.current) {
+        URL.revokeObjectURL(currentBlobUrl.current);
       }
       if (wsRef.current) {
         wsRef.current.close();
@@ -69,6 +73,7 @@ export function LiveViewTab({ deviceId }: Props) {
 
     setStatus("connecting");
     const ws = new WebSocket(url);
+    let seq = 0;
 
     ws.onopen = () => {
       setStatus("connected");
@@ -76,29 +81,39 @@ export function LiveViewTab({ deviceId }: Props) {
 
     ws.onmessage = (event) => {
       if (event.data instanceof Blob) {
-        if (currentUrlRef.current) {
-          URL.revokeObjectURL(currentUrlRef.current);
+        seq++;
+        const currentSeq = seq;
+
+        frameCount.current++;
+
+        const now = Date.now();
+        frameTimestamps.current.push(now);
+        if (frameTimestamps.current.length > 60) {
+          frameTimestamps.current = frameTimestamps.current.slice(-60);
+        }
+
+        if (now - lastFpsUpdate.current >= 500) {
+          const timestamps = frameTimestamps.current;
+          if (timestamps.length > 1) {
+            const elapsed = now - timestamps[0];
+            const fps = Math.round(((timestamps.length - 1) / elapsed) * 1000);
+            setDisplayFps(Math.min(fps, 60));
+          }
+          setLastFrameTime(new Date().toLocaleTimeString());
+          lastFpsUpdate.current = now;
+        }
+
+        if (currentSeq < lastSeq.current) return;
+        lastSeq.current = currentSeq;
+
+        if (currentBlobUrl.current) {
+          URL.revokeObjectURL(currentBlobUrl.current);
         }
         const blobUrl = URL.createObjectURL(event.data);
-        currentUrlRef.current = blobUrl;
+        currentBlobUrl.current = blobUrl;
         if (imgRef.current) {
           imgRef.current.src = blobUrl;
         }
-
-        const now = Date.now();
-        frameTimesRef.current.push(now);
-        if (frameTimesRef.current.length > 30) {
-          frameTimesRef.current = frameTimesRef.current.slice(-30);
-        }
-        if (frameTimesRef.current.length > 1) {
-          const elapsed = now - frameTimesRef.current[0];
-          const calculated = Math.round(
-            ((frameTimesRef.current.length - 1) / elapsed) * 1000
-          );
-          setFps(Math.min(calculated, 30));
-        }
-
-        setLastFrameTime(new Date().toLocaleTimeString());
       } else if (typeof event.data === "string") {
         handleWSMessage(event.data);
       }
@@ -122,10 +137,13 @@ export function LiveViewTab({ deviceId }: Props) {
       wsRef.current = null;
     }
     setStatus("disconnected");
-    setFps(0);
-    setResolution("");
+    setDisplayFps(0);
+    setDisplayResolution("");
     setLastFrameTime("");
-    frameTimesRef.current = [];
+    frameTimestamps.current = [];
+    frameCount.current = 0;
+    lastFpsUpdate.current = 0;
+    lastSeq.current = 0;
     disableRemote();
   }, [disableRemote]);
 
@@ -136,7 +154,7 @@ export function LiveViewTab({ deviceId }: Props) {
 
   const handleImgLoad = () => {
     if (imgRef.current) {
-      setResolution(`${imgRef.current.naturalWidth}x${imgRef.current.naturalHeight}`);
+      setDisplayResolution(`${imgRef.current.naturalWidth}x${imgRef.current.naturalHeight}`);
     }
   };
 
@@ -254,8 +272,8 @@ export function LiveViewTab({ deviceId }: Props) {
               <span className="text-red-500 font-medium">Disconnected</span>
             )}
           </span>
-          <span>FPS: {fps}</span>
-          {resolution && <span>Resolution: {resolution}</span>}
+          <span>FPS: {displayFps}</span>
+          {displayResolution && <span>Resolution: {displayResolution}</span>}
           {lastFrameTime && <span>Last Frame: {lastFrameTime}</span>}
           <span>
             Remote:{" "}

@@ -11,6 +11,7 @@ type StreamState struct {
 	Agent       *websocket.Conn
 	Viewers     map[string]*websocket.Conn
 	ControlChan chan []byte
+	LatestFrame []byte
 }
 
 type Hub struct {
@@ -28,7 +29,10 @@ func (h *Hub) GetOrCreate(deviceID string) *StreamState {
 	if s, ok := h.Streams[deviceID]; ok {
 		return s
 	}
-	s := &StreamState{Viewers: make(map[string]*websocket.Conn), ControlChan: make(chan []byte, 64)}
+	s := &StreamState{
+		Viewers:     make(map[string]*websocket.Conn),
+		ControlChan: make(chan []byte, 64),
+	}
 	h.Streams[deviceID] = s
 	return s
 }
