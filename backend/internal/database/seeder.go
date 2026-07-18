@@ -9,27 +9,31 @@ import (
 )
 
 func SeedAdmin() {
-	var count int64
-	DB.Model(&models.Admin{}).Count(&count)
-
-	if count > 0 {
-		log.Println("✅ Admin already exists, skipping seed")
-		return
-	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte("Admin@123"), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatal("❌ Failed to hash admin password:", err)
 	}
 
-	admin := &models.Admin{
+	var admin models.Admin
+	result := DB.Where("email = ?", "admin@sentineldesk.com").First(&admin)
+
+	if result.Error == nil {
+		admin.Password = string(hash)
+		if err := DB.Save(&admin).Error; err != nil {
+			log.Fatal("❌ Failed to update admin password:", err)
+		}
+		log.Println("✅ Admin password updated (admin@sentineldesk.com)")
+		return
+	}
+
+	admin = models.Admin{
 		Name:     "Admin",
 		Email:    "admin@sentineldesk.com",
 		Password: string(hash),
 		Role:     "admin",
 	}
 
-	if err := DB.Create(admin).Error; err != nil {
+	if err := DB.Create(&admin).Error; err != nil {
 		log.Fatal("❌ Failed to seed admin:", err)
 	}
 

@@ -9,6 +9,15 @@ node_modules/
 
 # Environment
 .env
+.env.local
+.env.*.local
+
+# Next.js build
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
 
 # VS Code
 .vscode/
