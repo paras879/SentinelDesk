@@ -1,7 +1,13 @@
 package main
 
 import (
+	"context"
+	"io"
 	"log"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
 	"time"
 
 	"sentineldesk/agent/internal/config"
@@ -14,13 +20,98 @@ import (
 	"sentineldesk/agent/internal/system"
 	"sentineldesk/agent/internal/systeminfo"
 	"sentineldesk/agent/internal/windowsservice"
+
+	"golang.org/x/sys/windows/svc"
 )
 
 const logPrefix = "[SentinelDesk Agent] "
 
+var logFile *os.File
+
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
 	log.SetPrefix(logPrefix)
 
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "install":
+			if err := installService(); err != nil {
+				log.Fatalf("Install failed: %v", err)
+			}
+			log.Println("Service installed successfully")
+			return
+		case "uninstall":
+			if err := removeService(); err != nil {
+				log.Fatalf("Uninstall failed: %v", err)
+			}
+			log.Println("Service uninstalled successfully")
+			return
+		case "start":
+			if err := startService(); err != nil {
+				log.Fatalf("Start failed: %v", err)
+			}
+			log.Println("Service started successfully")
+			return
+		case "stop":
+			if err := stopService(); err != nil {
+				log.Fatalf("Stop failed: %v", err)
+			}
+			log.Println("Service stopped successfully")
+			return
+		case "run":
+			if err := runService(); err != nil {
+				log.Fatalf("Service run failed: %v", err)
+			}
+			return
+		}
+	}
+
+	if isSvc, err := svc.IsWindowsService(); err == nil && isSvc {
+		if err := runService(); err != nil {
+			log.Fatalf("Service run failed: %v", err)
+		}
+		return
+	}
+
+	setupFileLogging()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		log.Println("[INFO] Received shutdown signal")
+		cancel()
+	}()
+
+	runAgent(ctx)
+}
+
+func setupFileLogging() {
+	progData := os.Getenv("PROGRAMDATA")
+	if progData == "" {
+		progData = filepath.Join(os.Getenv("SystemDrive"), "\\ProgramData")
+	}
+	logDir := filepath.Join(progData, "SentinelDesk", "agent", "logs")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Printf("[WARN] Failed to create log directory %s: %v", logDir, err)
+		return
+	}
+
+	logPath := filepath.Join(logDir, "agent.log")
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("[WARN] Failed to open log file %s: %v", logPath, err)
+		return
+	}
+	logFile = f
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
+	log.Printf("[INFO] Logging to %s", logPath)
+}
+
+func runAgent(ctx context.Context) {
 	log.Println("[INFO] Loading configuration...")
 	config.Load()
 	cfg := config.Get()
@@ -48,9 +139,20 @@ func main() {
 
 	log.Println("[INFO] Registering device...")
 	for {
+		select {
+		case <-ctx.Done():
+			log.Println("[INFO] Registration cancelled during shutdown")
+			return
+		default:
+		}
 		if err := register.RegisterDevice(); err != nil {
 			log.Println("[ERROR] Registration failed, retrying in 5 seconds:", err)
-			time.Sleep(5 * time.Second)
+			select {
+			case <-ctx.Done():
+				log.Println("[INFO] Registration cancelled during shutdown")
+				return
+			case <-time.After(5 * time.Second):
+			}
 			continue
 		}
 		break
@@ -60,79 +162,114 @@ func main() {
 	interval := config.GetHeartbeatInterval()
 	log.Printf("[INFO] Heartbeat interval: %d seconds", interval)
 
-	log.Println("[INFO] Starting heartbeat...")
+	log.Println("[INFO] Sending initial heartbeat...")
 	if err := heartbeat.SendHeartbeat(); err != nil {
 		log.Println("[ERROR] Initial heartbeat failed:", err)
 	} else {
 		log.Println("[SUCCESS] Heartbeat sent")
 	}
 
-	go func() {
-		ticker := time.NewTicker(time.Duration(interval) * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			if err := heartbeat.SendHeartbeat(); err != nil {
-				log.Println("[ERROR] Heartbeat failed:", err)
-			}
-		}
-	}()
-
-	log.Println("[INFO] Uploading system info...")
-	sendSystemInfo()
-
-	log.Println("[INFO] Uploading software inventory...")
-	sendSoftwareInventory()
-
-	log.Println("[INFO] Uploading process inventory...")
-	sendProcesses()
-
-	log.Println("[INFO] Uploading Windows services...")
-	sendWindowsServices()
-
-	go func() {
-		systemInfoTicker := time.NewTicker(time.Duration(interval) * time.Second)
-		defer systemInfoTicker.Stop()
-		for range systemInfoTicker.C {
-			sendSystemInfo()
-		}
-	}()
-
-	go func() {
-		softwareTicker := time.NewTicker(10 * time.Minute)
-		defer softwareTicker.Stop()
-		for range softwareTicker.C {
-			sendSoftwareInventory()
-		}
-	}()
-
-	go func() {
-		processTicker := time.NewTicker(60 * time.Second)
-		defer processTicker.Stop()
-		for range processTicker.C {
-			sendProcesses()
-		}
-	}()
-
-	go func() {
-		serviceTicker := time.NewTicker(5 * time.Minute)
-		defer serviceTicker.Stop()
-		for range serviceTicker.C {
-			sendWindowsServices()
-		}
-	}()
-
-	go func() {
-		pollTicker := time.NewTicker(15 * time.Second)
-		defer pollTicker.Stop()
-		for range pollTicker.C {
-			windowsservice.PollAndExecuteCommands()
-		}
-	}()
+	go runHeartbeatLoop(ctx, interval)
+	go runSystemInfoLoop(ctx, interval)
+	go runSoftwareInventoryLoop(ctx)
+	go runProcessInventoryLoop(ctx)
+	go runWindowsServicesLoop(ctx)
+	go runCommandPollLoop(ctx)
 
 	go liveview.NewStreamer().Start()
 
 	log.Println("[INFO] All services started. Agent is running.")
-	select {}
+	<-ctx.Done()
+
+	log.Println("[INFO] Agent shutting down gracefully...")
+	if logFile != nil {
+		logFile.Sync()
+	}
+	time.Sleep(500 * time.Millisecond)
+}
+
+func runHeartbeatLoop(ctx context.Context, interval int) {
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := heartbeat.SendHeartbeat(); err != nil {
+				log.Println("[ERROR] Heartbeat failed:", err)
+			}
+		}
+	}
+}
+
+func runSystemInfoLoop(ctx context.Context, interval int) {
+	sendSystemInfo()
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sendSystemInfo()
+		}
+	}
+}
+
+func runSoftwareInventoryLoop(ctx context.Context) {
+	sendSoftwareInventory()
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sendSoftwareInventory()
+		}
+	}
+}
+
+func runProcessInventoryLoop(ctx context.Context) {
+	sendProcesses()
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sendProcesses()
+		}
+	}
+}
+
+func runWindowsServicesLoop(ctx context.Context) {
+	sendWindowsServices()
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sendWindowsServices()
+		}
+	}
+}
+
+func runCommandPollLoop(ctx context.Context) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			windowsservice.PollAndExecuteCommands()
+		}
+	}
 }
 
 func sendSystemInfo() {
@@ -141,7 +278,6 @@ func sendSystemInfo() {
 		log.Println("[ERROR] SystemInfo collection failed:", err)
 		return
 	}
-
 	if err := systeminfo.SendSystemInfo(info); err != nil {
 		log.Println("[ERROR] SystemInfo upload failed:", err)
 	} else {
@@ -155,7 +291,6 @@ func sendSoftwareInventory() {
 		log.Println("[ERROR] SoftwareInventory collection failed:", err)
 		return
 	}
-
 	if err := software.SendSoftware(apps); err != nil {
 		log.Println("[ERROR] SoftwareInventory upload failed:", err)
 	} else {
@@ -169,7 +304,6 @@ func sendProcesses() {
 		log.Println("[ERROR] ProcessInventory collection failed:", err)
 		return
 	}
-
 	if err := process.SendProcesses(procs); err != nil {
 		log.Println("[ERROR] ProcessInventory upload failed:", err)
 	} else {
@@ -183,7 +317,6 @@ func sendWindowsServices() {
 		log.Println("[ERROR] WindowsServices collection failed:", err)
 		return
 	}
-
 	if err := windowsservice.SendServices(svcs); err != nil {
 		log.Println("[ERROR] WindowsServices upload failed:", err)
 	} else {

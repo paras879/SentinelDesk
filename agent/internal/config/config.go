@@ -18,22 +18,17 @@ type Config struct {
 var cfg *Config
 
 func Load() {
-	configPath := "config.yaml"
-	absPath, err := filepath.Abs(configPath)
-	if err != nil {
-		absPath = configPath
-	}
-
-	log.Printf("Config file path: %s", absPath)
+	configPath := findConfigFile("config.yaml")
+	log.Printf("Config file path: %s", configPath)
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatalf("Failed to read %s: %v", absPath, err)
+		log.Fatalf("Failed to read %s: %v", configPath, err)
 	}
 
 	cfg = &Config{}
 	if err := yaml.Unmarshal(data, cfg); err != nil {
-		log.Fatalf("Failed to parse %s: %v", absPath, err)
+		log.Fatalf("Failed to parse %s: %v", configPath, err)
 	}
 
 	if cfg.ServerURL == "" {
@@ -50,6 +45,21 @@ func Load() {
 	}
 
 	log.Printf("Loaded Server URL: %s", cfg.ServerURL)
+}
+
+func findConfigFile(name string) string {
+	if _, err := os.Stat(name); err == nil {
+		return name
+	}
+	exe, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exe)
+		p := filepath.Join(exeDir, name)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return name
 }
 
 func Get() *Config {
