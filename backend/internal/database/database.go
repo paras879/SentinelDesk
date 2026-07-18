@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log"
 
 	"sentineldesk/backend/internal/config"
@@ -13,16 +12,20 @@ import (
 var DB *gorm.DB
 
 func Connect(cfg *config.Config) error {
+	var dsn string
 
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		cfg.DBHost,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-		cfg.DBPort,
-		cfg.DBSSLMode,
-	)
+	if cfg.DatabaseURL != "" {
+		dsn = cfg.DatabaseURL
+		log.Println("ℹ️  Connecting using DATABASE_URL")
+	} else {
+		dsn = "host=" + cfg.DBHost +
+			" user=" + cfg.DBUser +
+			" password=" + cfg.DBPassword +
+			" dbname=" + cfg.DBName +
+			" port=" + cfg.DBPort +
+			" sslmode=" + cfg.DBSSLMode
+		log.Println("ℹ️  Connecting using individual DB_* variables (local development)")
+	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

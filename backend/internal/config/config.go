@@ -13,12 +13,13 @@ type Config struct {
 	AppEnv     string
 	AppVersion string
 
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
+	DBHost       string
+	DBPort       string
+	DBUser       string
+	DBPassword   string
+	DBName       string
+	DBSSLMode    string
+	DatabaseURL  string
 
 	// JWT
 	JWTSecret string
@@ -45,12 +46,13 @@ func LoadConfig() *Config {
 		AppVersion: getEnv("APP_VERSION", "1.0.0"),
 
 		// Database
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "admin"),
-		DBPassword: getEnv("DB_PASSWORD", "admin123"),
-		DBName:     getEnv("DB_NAME", "sentineldesk"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
+		DBHost:      getEnv("DB_HOST", "localhost"),
+		DBPort:      getEnv("DB_PORT", "5432"),
+		DBUser:      getEnv("DB_USER", "admin"),
+		DBPassword:  getEnv("DB_PASSWORD", "admin123"),
+		DBName:      getEnv("DB_NAME", "sentineldesk"),
+		DBSSLMode:   getEnv("DB_SSLMODE", "disable"),
 
 		// JWT
 		JWTSecret: getEnv("JWT_SECRET", "SentinelDeskSuperSecretKey123456789"),
