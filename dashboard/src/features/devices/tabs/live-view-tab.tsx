@@ -29,6 +29,10 @@ export function LiveViewTab({ deviceId }: Props) {
   const lastFpsUpdate = useRef(0);
   const lastSeq = useRef(0);
 
+  const isManualDisconnect = useRef(false);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const reconnectAttempt = useRef(0);
+
   const {
     enabled: remoteEnabled,
     enable: enableRemote,
@@ -46,8 +50,17 @@ export function LiveViewTab({ deviceId }: Props) {
     handleKeyEvent: hookHandleKeyEvent,
   } = useRemoteControl(wsRef, containerRef);
 
+  const clearReconnect = useCallback(() => {
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = undefined;
+    }
+    reconnectAttempt.current = 0;
+  }, []);
+
   useEffect(() => {
     return () => {
+      clearReconnect();
       if (currentBlobUrl.current) {
         URL.revokeObjectURL(currentBlobUrl.current);
       }
@@ -55,13 +68,24 @@ export function LiveViewTab({ deviceId }: Props) {
         wsRef.current.close();
       }
     };
-  }, []);
+  }, [clearReconnect]);
 
   useEffect(() => {
     if (remoteEnabled) {
       containerRef.current?.focus();
     }
   }, [remoteEnabled]);
+
+  const scheduleReconnect = useCallback(() => {
+    if (isManualDisconnect.current) return;
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempt.current), 30000);
+    reconnectAttempt.current++;
+    reconnectTimer.current = setTimeout(() => {
+      if (isManualDisconnect.current) return;
+      connect();
+    }, delay);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const connect = useCallback(() => {
     const token = localStorage.getItem("sentineldesk_token");
@@ -77,6 +101,7 @@ export function LiveViewTab({ deviceId }: Props) {
 
     ws.onopen = () => {
       setStatus("connected");
+      reconnectAttempt.current = 0;
     };
 
     ws.onmessage = (event) => {
@@ -122,6 +147,7 @@ export function LiveViewTab({ deviceId }: Props) {
     ws.onclose = () => {
       setStatus("disconnected");
       disableRemote();
+      scheduleReconnect();
     };
 
     ws.onerror = () => {
@@ -129,9 +155,11 @@ export function LiveViewTab({ deviceId }: Props) {
     };
 
     wsRef.current = ws;
-  }, [deviceId, handleWSMessage, disableRemote]);
+  }, [deviceId, handleWSMessage, disableRemote, scheduleReconnect]);
 
   const disconnect = useCallback(() => {
+    isManualDisconnect.current = true;
+    clearReconnect();
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -145,12 +173,14 @@ export function LiveViewTab({ deviceId }: Props) {
     lastFpsUpdate.current = 0;
     lastSeq.current = 0;
     disableRemote();
-  }, [disableRemote]);
+  }, [disableRemote, clearReconnect]);
 
   const reconnect = useCallback(() => {
+    isManualDisconnect.current = false;
+    clearReconnect();
     disconnect();
     setTimeout(connect, 500);
-  }, [disconnect, connect]);
+  }, [disconnect, connect, clearReconnect]);
 
   const handleImgLoad = () => {
     if (imgRef.current) {

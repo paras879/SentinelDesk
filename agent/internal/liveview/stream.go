@@ -168,8 +168,11 @@ func (s *Streamer) captureLoop(stop chan struct{}) {
 func (s *Streamer) sendLoop(conn *websocket.Conn, stop chan struct{}) {
 	defer close(stop)
 
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	adaptTicker := time.NewTicker(2 * time.Second)
+	defer adaptTicker.Stop()
+
+	keepaliveTicker := time.NewTicker(30 * time.Second)
+	defer keepaliveTicker.Stop()
 
 	for {
 		select {
@@ -183,8 +186,13 @@ func (s *Streamer) sendLoop(conn *websocket.Conn, stop chan struct{}) {
 			}
 			elapsed := time.Since(start).Microseconds()
 			s.updateSendEWMA(elapsed)
-		case <-ticker.C:
+		case <-adaptTicker.C:
 			s.adapt()
+		case <-keepaliveTicker.C:
+			conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+			if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); err != nil {
+				return
+			}
 		}
 	}
 }

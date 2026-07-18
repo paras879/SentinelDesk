@@ -2,6 +2,7 @@ package liveview
 
 import (
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -72,6 +73,12 @@ func HandleAgentStream(c *websocket.Conn) {
 			stream.mu.Unlock()
 		}
 	}()
+
+	c.SetReadDeadline(time.Now().Add(90 * time.Second))
+	c.SetPongHandler(func(string) error {
+		c.SetReadDeadline(time.Now().Add(90 * time.Second))
+		return nil
+	})
 
 	for {
 		msgType, data, err := c.ReadMessage()
