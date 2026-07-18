@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"image"
 	"image/jpeg"
+	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -80,6 +81,9 @@ func (c *Capturer) Capture(quality int) ([]byte, error) {
 	jpegBufferPool.Put(buf)
 
 	c.captureCount.Add(1)
+	if c.captureCount.Load()%10 == 1 {
+		log.Printf("[Capture] frame captured quality=%d size=%d count=%d", quality, len(out), c.captureCount.Load())
+	}
 	return out, nil
 }
 

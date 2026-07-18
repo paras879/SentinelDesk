@@ -27,11 +27,12 @@ export function LiveViewTab({ deviceId }: Props) {
   const currentBlobUrl = useRef<string>("");
   const frameCount = useRef(0);
   const lastFpsUpdate = useRef(0);
-  const lastSeq = useRef(0);
+  const lastFrameLog = useRef(0);
 
   const isManualDisconnect = useRef(false);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reconnectAttempt = useRef(0);
+  const connectRef = useRef<() => void>(() => {});
 
   const {
     enabled: remoteEnabled,
@@ -80,11 +81,12 @@ export function LiveViewTab({ deviceId }: Props) {
     if (isManualDisconnect.current) return;
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempt.current), 30000);
     reconnectAttempt.current++;
+    console.log(`[LiveView] scheduling reconnect in ${delay}ms (attempt ${reconnectAttempt.current})`);
     reconnectTimer.current = setTimeout(() => {
       if (isManualDisconnect.current) return;
-      connect();
+      console.log("[LiveView] auto-reconnecting...");
+      connectRef.current();
     }, delay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const connect = useCallback(() => {
@@ -95,23 +97,26 @@ export function LiveViewTab({ deviceId }: Props) {
     const wsBase = apiUrl.replace(/^http/, "ws");
     const url = `${wsBase}/ws/live/view/${deviceId}?token=${token}`;
 
+    console.log("[LiveView] connecting to", url);
     setStatus("connecting");
     const ws = new WebSocket(url);
-    let seq = 0;
 
     ws.onopen = () => {
+      console.log("[LiveView] WebSocket opened");
       setStatus("connected");
       reconnectAttempt.current = 0;
     };
 
     ws.onmessage = (event) => {
       if (event.data instanceof Blob) {
-        seq++;
-        const currentSeq = seq;
-
         frameCount.current++;
-
         const now = Date.now();
+
+        if (now - lastFrameLog.current >= 2000) {
+          console.log(`[LiveView] frame #${frameCount.current} size=${event.data.size}`);
+          lastFrameLog.current = now;
+        }
+
         frameTimestamps.current.push(now);
         if (frameTimestamps.current.length > 60) {
           frameTimestamps.current = frameTimestamps.current.slice(-60);
@@ -128,13 +133,11 @@ export function LiveViewTab({ deviceId }: Props) {
           lastFpsUpdate.current = now;
         }
 
-        if (currentSeq < lastSeq.current) return;
-        lastSeq.current = currentSeq;
-
         if (currentBlobUrl.current) {
           URL.revokeObjectURL(currentBlobUrl.current);
         }
-        const blobUrl = URL.createObjectURL(event.data);
+        const blob = new Blob([event.data], { type: "image/jpeg" });
+        const blobUrl = URL.createObjectURL(blob);
         currentBlobUrl.current = blobUrl;
         if (imgRef.current) {
           imgRef.current.src = blobUrl;
@@ -144,20 +147,27 @@ export function LiveViewTab({ deviceId }: Props) {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+      console.log(`[LiveView] WebSocket closed code=${e.code} reason=${e.reason}`);
       setStatus("disconnected");
       disableRemote();
       scheduleReconnect();
     };
 
     ws.onerror = () => {
+      console.log("[LiveView] WebSocket error");
       setStatus("disconnected");
     };
 
     wsRef.current = ws;
   }, [deviceId, handleWSMessage, disableRemote, scheduleReconnect]);
 
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
   const disconnect = useCallback(() => {
+    console.log("[LiveView] manual disconnect");
     isManualDisconnect.current = true;
     clearReconnect();
     if (wsRef.current) {
@@ -171,7 +181,6 @@ export function LiveViewTab({ deviceId }: Props) {
     frameTimestamps.current = [];
     frameCount.current = 0;
     lastFpsUpdate.current = 0;
-    lastSeq.current = 0;
     disableRemote();
   }, [disableRemote, clearReconnect]);
 

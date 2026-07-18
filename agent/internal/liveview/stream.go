@@ -174,6 +174,7 @@ func (s *Streamer) sendLoop(conn *websocket.Conn, stop chan struct{}) {
 	keepaliveTicker := time.NewTicker(30 * time.Second)
 	defer keepaliveTicker.Stop()
 
+	var sent int
 	for {
 		select {
 		case <-stop:
@@ -186,6 +187,10 @@ func (s *Streamer) sendLoop(conn *websocket.Conn, stop chan struct{}) {
 			}
 			elapsed := time.Since(start).Microseconds()
 			s.updateSendEWMA(elapsed)
+			sent++
+			if sent%30 == 1 {
+				log.Printf("[Send] frame size=%d sendUs=%d total=%d", len(pkt.data), elapsed, sent)
+			}
 		case <-adaptTicker.C:
 			s.adapt()
 		case <-keepaliveTicker.C:

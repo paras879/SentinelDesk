@@ -80,6 +80,7 @@ func HandleAgentStream(c *websocket.Conn) {
 		return nil
 	})
 
+	var frameCount int
 	for {
 		msgType, data, err := c.ReadMessage()
 		if err != nil {
@@ -88,6 +89,12 @@ func HandleAgentStream(c *websocket.Conn) {
 		}
 		if msgType != websocket.BinaryMessage {
 			continue
+		}
+
+		frameCount++
+		if frameCount%30 == 1 {
+			log.Printf("[Backend] frame #%d from agent %s size=%d viewers=%d",
+				frameCount, deviceID, len(data), len(stream.Viewers))
 		}
 
 		stream.mu.Lock()
