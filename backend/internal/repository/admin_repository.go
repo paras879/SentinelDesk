@@ -37,3 +37,21 @@ func (r *AdminRepository) GetByEmail(email string) (*models.Admin, error) {
 
 	return &admin, nil
 }
+
+func (r *AdminRepository) GetByID(id string) (*models.Admin, error) {
+	var admin models.Admin
+
+	err := database.DB.
+		Where("id = ?", id).
+		First(&admin).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &admin, nil
+}
+
+func (r *AdminRepository) Update(admin *models.Admin) error {
+	return database.DB.Save(admin).Error
+}

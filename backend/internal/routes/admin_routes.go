@@ -17,4 +17,5 @@ func SetupAdminRoutes(app *fiber.App) {
 	api.Use(middleware.JWTProtected())
 
 	api.Get("/profile", admin.Profile)
+	api.Put("/profile", admin.UpdateProfile)
 }

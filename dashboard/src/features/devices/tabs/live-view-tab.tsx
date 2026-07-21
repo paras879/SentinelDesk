@@ -290,16 +290,7 @@ export function LiveViewTab({ deviceId }: Props) {
             <RefreshCw className="mr-1 h-4 w-4" />
             Reconnect
           </Button>
-          {status === "connected" && (
-            <Button
-              size="sm"
-              variant={remoteEnabled ? "default" : "secondary"}
-              onClick={remoteEnabled ? disableRemote : enableRemote}
-            >
-              <MousePointer className="mr-1 h-4 w-4" />
-              {remoteEnabled ? "Disable Remote Control" : "Enable Remote Control"}
-            </Button>
-          )}
+
         </div>
 
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -316,14 +307,7 @@ export function LiveViewTab({ deviceId }: Props) {
           <span>FPS: {displayFps}</span>
           {displayResolution && <span>Resolution: {displayResolution}</span>}
           {lastFrameTime && <span>Last Frame: {lastFrameTime}</span>}
-          <span>
-            Remote:{" "}
-            {remoteEnabled ? (
-              <Badge variant="default" className="bg-green-600">Active</Badge>
-            ) : (
-              <Badge variant="secondary">Off</Badge>
-            )}
-          </span>
+
           <span>Packets: {packetsSent}</span>
           {remoteEnabled && screenInfo && (
             <span>Remote Screen: {screenInfo.width}x{screenInfo.height}</span>
@@ -381,12 +365,7 @@ export function LiveViewTab({ deviceId }: Props) {
           )}
         </div>
 
-        {remoteEnabled && (
-          <p className="text-xs text-muted-foreground text-center">
-            Remote control active. Mouse and keyboard input is being sent to the
-            remote machine. Click the cursor area first to focus keyboard input.
-          </p>
-        )}
+
       </CardContent>
     </Card>
   );

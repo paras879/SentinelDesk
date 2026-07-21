@@ -74,3 +74,27 @@ func (s *AuthService) Login(email, password string) (*models.Admin, error) {
 
 	return admin, nil
 }
+
+func (s *AuthService) UpdateProfile(id string, name string, email string, newPassword string) error {
+	admin, err := s.repo.GetByID(id)
+	if err != nil {
+		return errors.New("admin not found")
+	}
+
+	if name != "" {
+		admin.Name = name
+	}
+	if email != "" {
+		admin.Email = email
+	}
+
+	if newPassword != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		admin.Password = string(hash)
+	}
+
+	return s.repo.Update(admin)
+}
