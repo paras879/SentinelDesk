@@ -140,11 +140,11 @@ export default function DevicesPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="text-lg">
               {siteFilter === "current" ? "Current Site Devices" : "All Devices"}
             </CardTitle>
-            <div className="relative w-72">
+            <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name, IP, network..."
@@ -163,98 +163,100 @@ export default function DevicesPage() {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Device Name</TableHead>
-                  <TableHead>Device ID</TableHead>
-                  <TableHead>Current IP</TableHead>
-                  <TableHead>Site Group</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Last Seen</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered?.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {siteFilter === "current" && !mySiteGroup
-                        ? "Unable to detect your site. Switch to All Devices."
-                        : search
-                          ? "No devices match your search"
-                          : "No devices registered yet"}
-                    </TableCell>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="whitespace-nowrap">Device Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Device ID</TableHead>
+                    <TableHead className="whitespace-nowrap">Current IP</TableHead>
+                    <TableHead className="whitespace-nowrap">Site Group</TableHead>
+                    <TableHead className="whitespace-nowrap">User</TableHead>
+                    <TableHead className="whitespace-nowrap">Last Seen</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filtered?.map((device) => (
-                    <TableRow key={device.ID}>
-                      <TableCell>
-                        {device.Status === "online" ? (
-                          <Wifi className="h-4 w-4 text-emerald-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">{device.DeviceName || device.Hostname || "—"}</TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {device.ID.slice(0, 16)}...
-                      </TableCell>
-                      <TableCell>{device.IPAddress || "—"}</TableCell>
-                      <TableCell>
-                        {device.NetworkGroupID ? (
-                          <Badge variant="outline" className="text-xs font-mono">
-                            <Layers className="mr-1 h-3 w-3" />
-                            {device.NetworkGroupID.slice(0, 8)}...
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {device.Username ? (
-                          <div className="flex items-center gap-1.5" title={device.Username}>
-                            <User className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{device.Username.split('\\').pop()}</span>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {device.LastSeen
-                          ? new Date(device.LastSeen).toLocaleString()
-                          : "Never"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => router.push(`/devices/${device.ID}`)}
-                            className="h-auto p-0"
-                          >
-                            <Eye className="h-3.5 w-3.5 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => handleDelete(device.ID, device.DeviceName || device.Hostname || device.ID)}
-                            className="h-auto p-0 text-destructive hover:text-destructive/80"
-                            disabled={deletingId === device.ID}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        {siteFilter === "current" && !mySiteGroup
+                          ? "Unable to detect your site. Switch to All Devices."
+                          : search
+                            ? "No devices match your search"
+                            : "No devices registered yet"}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filtered?.map((device) => (
+                      <TableRow key={device.ID}>
+                        <TableCell>
+                          {device.Status === "online" ? (
+                            <Wifi className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <WifiOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium whitespace-nowrap">{device.DeviceName || device.Hostname || "—"}</TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                          {device.ID.slice(0, 16)}...
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{device.IPAddress || "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {device.NetworkGroupID ? (
+                            <Badge variant="outline" className="text-xs font-mono">
+                              <Layers className="mr-1 h-3 w-3" />
+                              {device.NetworkGroupID.slice(0, 8)}...
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {device.Username ? (
+                            <div className="flex items-center gap-1.5" title={device.Username}>
+                              <User className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate max-w-[120px]">{device.Username.split('\\').pop()}</span>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {device.LastSeen
+                            ? new Date(device.LastSeen).toLocaleString()
+                            : "Never"}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => router.push(`/devices/${device.ID}`)}
+                              className="h-auto p-0"
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => handleDelete(device.ID, device.DeviceName || device.Hostname || device.ID)}
+                              className="h-auto p-0 text-destructive hover:text-destructive/80"
+                              disabled={deletingId === device.ID}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -19,7 +19,7 @@ import {
   Grid,
 } from "lucide-react";
 
-const navItems = [
+export const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/devices", label: "Devices", icon: Monitor },
   { href: "/monitoring", label: "Monitoring", icon: Activity },
@@ -36,7 +36,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-300",
+        "hidden md:flex flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}
     >
