@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 
 	"sentineldesk/backend/internal/handlers"
@@ -26,6 +27,12 @@ func SetupDeviceRoutes(app *fiber.App) {
 		"/heartbeat",
 		middleware.AgentProtected(),
 		device.Heartbeat,
+	)
+
+	app.Get(
+		"/ws/heartbeat",
+		middleware.AgentProtected(),
+		websocket.New(device.HeartbeatWS),
 	)
 
 	// ==========================

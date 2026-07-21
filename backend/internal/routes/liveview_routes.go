@@ -19,7 +19,10 @@ func SetupLiveViewRoutes(app *fiber.App) {
 		}
 		c.Locals("deviceID", deviceID)
 		return c.Next()
-	}, websocket.New(liveview.HandleAgentStream))
+	}, websocket.New(liveview.HandleAgentStream, websocket.Config{
+		ReadBufferSize:  2 * 1024 * 1024,
+		WriteBufferSize: 1024 * 1024,
+	}))
 
 	app.Get("/ws/live/view/:deviceID", func(c *fiber.Ctx) error {
 		token := c.Query("token")
@@ -43,5 +46,8 @@ func SetupLiveViewRoutes(app *fiber.App) {
 
 		c.Locals("deviceID", deviceID)
 		return c.Next()
-	}, websocket.New(liveview.HandleAdminView))
+	}, websocket.New(liveview.HandleAdminView, websocket.Config{
+		ReadBufferSize:  1024 * 1024,
+		WriteBufferSize: 1024 * 1024,
+	}))
 }

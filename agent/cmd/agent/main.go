@@ -162,14 +162,9 @@ func runAgent(ctx context.Context) {
 	interval := config.GetHeartbeatInterval()
 	log.Printf("[INFO] Heartbeat interval: %d seconds", interval)
 
-	log.Println("[INFO] Sending initial heartbeat...")
-	if err := heartbeat.SendHeartbeat(); err != nil {
-		log.Println("[ERROR] Initial heartbeat failed:", err)
-	} else {
-		log.Println("[SUCCESS] Heartbeat sent")
-	}
+	log.Println("[INFO] Starting WebSocket heartbeat...")
+	go heartbeat.StartHeartbeatLoop(ctx, interval)
 
-	go runHeartbeatLoop(ctx, interval)
 	go runSystemInfoLoop(ctx, interval)
 	go runSoftwareInventoryLoop(ctx)
 	go runProcessInventoryLoop(ctx)
@@ -186,21 +181,6 @@ func runAgent(ctx context.Context) {
 		logFile.Sync()
 	}
 	time.Sleep(500 * time.Millisecond)
-}
-
-func runHeartbeatLoop(ctx context.Context, interval int) {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := heartbeat.SendHeartbeat(); err != nil {
-				log.Println("[ERROR] Heartbeat failed:", err)
-			}
-		}
-	}
 }
 
 func runSystemInfoLoop(ctx context.Context, interval int) {

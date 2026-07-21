@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
@@ -197,7 +198,7 @@ func (h *DeviceHandler) GetByNetwork(c *fiber.Ctx) error {
 }
 
 // ==========================
-// Heartbeat
+// Heartbeat (HTTP)
 // ==========================
 func (h *DeviceHandler) Heartbeat(c *fiber.Ctx) error {
 
@@ -240,6 +241,37 @@ func (h *DeviceHandler) Heartbeat(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "Heartbeat received successfully",
 	})
+}
+
+// ==========================
+// Heartbeat (WebSocket)
+// ==========================
+func (h *DeviceHandler) HeartbeatWS(c *websocket.Conn) {
+	for {
+		var req HeartbeatRequest
+		if err := c.ReadJSON(&req); err != nil {
+			log.Println("Heartbeat WS disconnected:", err)
+			break
+		}
+
+		if req.DeviceID == "" {
+			continue
+		}
+
+		deviceID, err := uuid.Parse(req.DeviceID)
+		if err != nil {
+			continue
+		}
+
+		h.service.Heartbeat(
+			deviceID,
+			req.IPAddress,
+			req.MACAddress,
+			req.ConnectedSubnet,
+			req.DefaultGateway,
+			req.NetworkGroupID,
+		)
+	}
 }
 
 // ==========================

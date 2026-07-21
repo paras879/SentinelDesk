@@ -42,12 +42,12 @@ type Streamer struct {
 
 func NewStreamer() *Streamer {
 	return &Streamer{
-		capturer:    NewCapturer(1280, 720),
+		capturer:    NewCapturer(1920, 1080),
 		frameChan:   make(chan *framePacket, 1),
-		quality:     70,
-		targetFPS:   20,
-		scaleWidth:  1280,
-		scaleHeight: 720,
+		quality:     85,
+		targetFPS:   30,
+		scaleWidth:  1920,
+		scaleHeight: 1080,
 	}
 }
 
@@ -222,7 +222,6 @@ func (s *Streamer) updateSendEWMA(elapsed int64) {
 func (s *Streamer) adapt() {
 	sendUs := atomic.LoadInt64(&s.sendTimeEWMA)
 	encodeUs := atomic.LoadInt64(&s.encodeTimeEWMA)
-	frameSize := atomic.LoadInt64(&s.lastFrameSize)
 
 	totalUs := sendUs + encodeUs
 	if totalUs < 1 {
@@ -239,27 +238,25 @@ func (s *Streamer) adapt() {
 	currentQuality := atomic.LoadInt32(&s.quality)
 
 	if ratio > 1.5 {
-		newFPS := int32(math.Min(20, float64(currentFPS)*1.2))
+		newFPS := int32(math.Min(60, float64(currentFPS)*1.2))
 		atomic.StoreInt32(&s.targetFPS, newFPS)
 
-		newQ := int32(math.Min(85, float64(currentQuality)*1.05))
+		newQ := int32(math.Min(100, float64(currentQuality)*1.05))
 		atomic.StoreInt32(&s.quality, newQ)
 
-		if frameSize < 30000 && newQ >= 80 {
-			nw := int32(math.Min(1920, float64(atomic.LoadInt32(&s.scaleWidth))*1.2))
-			nh := nw * 9 / 16
-			atomic.StoreInt32(&s.scaleWidth, nw)
-			atomic.StoreInt32(&s.scaleHeight, nh)
-		}
+		nw := int32(math.Min(2560, float64(atomic.LoadInt32(&s.scaleWidth))*1.2))
+		nh := nw * 9 / 16
+		atomic.StoreInt32(&s.scaleWidth, nw)
+		atomic.StoreInt32(&s.scaleHeight, nh)
 	} else if ratio < 0.5 {
-		newQ := int32(math.Max(60, float64(currentQuality)*0.9))
+		newQ := int32(math.Max(70, float64(currentQuality)*0.9))
 		atomic.StoreInt32(&s.quality, newQ)
 
-		if currentQuality <= 65 {
-			newFPS := int32(math.Max(8, float64(currentFPS)*0.8))
+		if currentQuality <= 75 {
+			newFPS := int32(math.Max(15, float64(currentFPS)*0.8))
 			atomic.StoreInt32(&s.targetFPS, newFPS)
 
-			nw := int32(math.Max(640, float64(atomic.LoadInt32(&s.scaleWidth))*0.8))
+			nw := int32(math.Max(1280, float64(atomic.LoadInt32(&s.scaleWidth))*0.8))
 			nh := nw * 9 / 16
 			atomic.StoreInt32(&s.scaleWidth, nw)
 			atomic.StoreInt32(&s.scaleHeight, nh)
