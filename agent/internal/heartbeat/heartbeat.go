@@ -56,7 +56,7 @@ func StartHeartbeatLoop(ctx context.Context, interval int) {
 
 func connectAndStreamHeartbeat(ctx context.Context, interval int) error {
 	cfg := config.Get()
-	wsURL := serverToWSURL(cfg.ServerURL) + "/api/v1/devices/ws/heartbeat"
+	wsURL := serverToWSURL(cfg.ServerURL) + "/ws/heartbeat"
 
 	header := map[string][]string{
 		"X-Agent-Key": {cfg.AgentKey},

@@ -45,7 +45,7 @@ func NewStreamer() *Streamer {
 		capturer:    NewCapturer(1920, 1080),
 		frameChan:   make(chan *framePacket, 1),
 		quality:     85,
-		targetFPS:   30,
+		targetFPS:   2,
 		scaleWidth:  1920,
 		scaleHeight: 1080,
 	}
@@ -238,7 +238,7 @@ func (s *Streamer) adapt() {
 	currentQuality := atomic.LoadInt32(&s.quality)
 
 	if ratio > 1.5 {
-		newFPS := int32(math.Min(60, float64(currentFPS)*1.2))
+		newFPS := int32(math.Min(3, float64(currentFPS)*1.2))
 		atomic.StoreInt32(&s.targetFPS, newFPS)
 
 		newQ := int32(math.Min(100, float64(currentQuality)*1.05))
@@ -253,7 +253,7 @@ func (s *Streamer) adapt() {
 		atomic.StoreInt32(&s.quality, newQ)
 
 		if currentQuality <= 75 {
-			newFPS := int32(math.Max(15, float64(currentFPS)*0.8))
+			newFPS := int32(math.Max(1, float64(currentFPS)*0.8))
 			atomic.StoreInt32(&s.targetFPS, newFPS)
 
 			nw := int32(math.Max(1280, float64(atomic.LoadInt32(&s.scaleWidth))*0.8))
