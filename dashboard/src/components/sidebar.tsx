@@ -16,12 +16,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
+  Grid,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/devices", label: "Devices", icon: Monitor },
   { href: "/monitoring", label: "Monitoring", icon: Activity },
+  { href: "/multi-view", label: "Multi-View", icon: Grid },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -62,19 +64,21 @@ export function Sidebar() {
             ? pathname === "/"
             : pathname.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-muted",
-                  isActive && "bg-sidebar-muted text-white",
-                  collapsed && "justify-center px-2"
-                )}
-              >
+            <Button
+              key={item.href}
+              variant="ghost"
+              asChild
+              className={cn(
+                "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-muted",
+                isActive && "bg-sidebar-muted text-white",
+                collapsed && "justify-center px-2"
+              )}
+            >
+              <Link href={item.href}>
                 <item.icon className="h-5 w-5 shrink-0" />
                 {!collapsed && <span>{item.label}</span>}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           );
         })}
       </nav>

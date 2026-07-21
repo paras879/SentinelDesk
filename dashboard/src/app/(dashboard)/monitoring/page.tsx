@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDevices } from "@/services/devices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, AlertTriangle, Monitor, Server, WifiOff } from "lucide-react";
+import { Activity, AlertTriangle, Monitor, Server, WifiOff, User } from "lucide-react";
 
 export default function MonitoringPage() {
   const { data, isLoading, error } = useQuery({
@@ -130,6 +130,12 @@ export default function MonitoringPage() {
                         <h3 className="font-semibold truncate w-32 md:w-40" title={device.DeviceName || device.Hostname}>
                           {device.DeviceName || device.Hostname || "Unknown Device"}
                         </h3>
+                        <div className="flex items-center gap-1.5 mt-2 mb-1 w-full" title={device.Username}>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/60 text-secondary-foreground text-sm font-medium border shadow-sm max-w-[140px] md:max-w-[160px]">
+                            <User className="h-4 w-4 shrink-0 opacity-70" />
+                            <span className="truncate">{device.Username ? device.Username.split('\\').pop() : "Unknown User"}</span>
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground font-mono">
                           {device.IPAddress || "No IP"}
                         </p>

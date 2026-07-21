@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { getDevices } from "@/services/devices";
+import { getDevices, deleteDevice } from "@/services/devices";
 import { getMyIP } from "@/services/dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -28,15 +29,19 @@ import {
   Globe,
   Building2,
   Layers,
+  Trash2,
+  User,
 } from "lucide-react";
 
 type SiteFilter = "all" | "current";
 
 export default function DevicesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState<SiteFilter>("current");
   const [mySiteGroup, setMySiteGroup] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +76,23 @@ export default function DevicesPage() {
       d.IPAddress?.toLowerCase().includes(search.toLowerCase()) ||
       d.ConnectedSubnet?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the device ${name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      await deleteDevice(id);
+      toast.success("Device deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Failed to delete device");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (error) {
     return (
@@ -191,7 +213,14 @@ export default function DevicesPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {device.Username || "—"}
+                        {device.Username ? (
+                          <div className="flex items-center gap-1.5" title={device.Username}>
+                            <User className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{device.Username.split('\\').pop()}</span>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {device.LastSeen
@@ -199,15 +228,27 @@ export default function DevicesPage() {
                           : "Never"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => router.push(`/devices/${device.ID}`)}
-                          className="h-auto p-0"
-                        >
-                          <Eye className="h-3.5 w-3.5 mr-1" />
-                          View
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => router.push(`/devices/${device.ID}`)}
+                            className="h-auto p-0"
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => handleDelete(device.ID, device.DeviceName || device.Hostname || device.ID)}
+                            className="h-auto p-0 text-destructive hover:text-destructive/80"
+                            disabled={deletingId === device.ID}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

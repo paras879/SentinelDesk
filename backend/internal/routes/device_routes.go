@@ -34,4 +34,5 @@ func SetupDeviceRoutes(app *fiber.App) {
 	api.Get("/", middleware.JWTProtected(), device.GetAll)
 	api.Get("/network/:networkID", middleware.JWTProtected(), device.GetByNetwork)
 	api.Get("/:id", middleware.JWTProtected(), device.GetByID)
+	api.Delete("/:id", middleware.JWTProtected(), device.Delete)
 }

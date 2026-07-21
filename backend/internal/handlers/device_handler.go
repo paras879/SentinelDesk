@@ -263,3 +263,26 @@ func (h *DeviceHandler) GetByID(c *fiber.Ctx) error {
 
 	return c.JSON(device)
 }
+
+// ==========================
+// Delete Device By UUID
+// ==========================
+func (h *DeviceHandler) Delete(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid device UUID",
+		})
+	}
+
+	err = h.service.DeleteDevice(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete device",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Device deleted successfully",
+	})
+}

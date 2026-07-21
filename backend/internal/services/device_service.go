@@ -122,3 +122,8 @@ func (s *DeviceService) FindDeviceByIP(ip string) (*models.Device, error) {
 func (s *DeviceService) GetByID(id uuid.UUID) (*models.Device, error) {
 	return s.repo.GetByID(id)
 }
+
+// Delete Device By UUID
+func (s *DeviceService) DeleteDevice(id uuid.UUID) error {
+	return s.repo.Delete(id)
+}

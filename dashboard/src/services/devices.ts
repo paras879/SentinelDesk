@@ -43,3 +43,7 @@ export async function stopService(deviceId: string, serviceName: string): Promis
 export async function restartService(deviceId: string, serviceName: string): Promise<void> {
   await api.post(`/api/v1/devices/${deviceId}/services/restart`, { service_name: serviceName });
 }
+
+export async function deleteDevice(deviceId: string): Promise<void> {
+  await api.delete(`/api/v1/devices/${deviceId}`);
+}

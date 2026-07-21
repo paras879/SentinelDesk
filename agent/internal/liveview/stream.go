@@ -14,7 +14,6 @@ import (
 
 	"sentineldesk/agent/internal/config"
 	"sentineldesk/agent/internal/deviceid"
-	"sentineldesk/agent/internal/remote"
 )
 
 func serverToWSURL(serverURL string) string {
@@ -94,11 +93,11 @@ func (s *Streamer) stream() error {
 
 	go func() {
 		for {
-			_, msg, err := conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 			if err != nil {
 				return
 			}
-			remote.HandleMessage(msg)
+			// Remote control disabled
 		}
 	}()
 

@@ -7,6 +7,9 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { Loader2 } from "lucide-react";
 
+import { Toaster } from "sonner";
+import { DeviceNotifier } from "@/components/device-notifier";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
   const router = useRouter();
@@ -29,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <DeviceNotifier />
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar />

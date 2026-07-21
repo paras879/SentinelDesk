@@ -114,3 +114,25 @@ func (r *DeviceRepository) Update(device *models.Device) error {
 func (r *DeviceRepository) GetByID(id uuid.UUID) (*models.Device, error) {
 	return r.GetByDeviceID(id)
 }
+
+// Delete Device
+func (r *DeviceRepository) Delete(id uuid.UUID) error {
+	tx := database.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// Manually cascade delete child records to prevent foreign key constraint errors
+	tx.Where("device_id = ?", id).Delete(&models.DeviceSystemInfo{})
+	tx.Where("device_id = ?", id).Delete(&models.Process{})
+	tx.Where("device_id = ?", id).Delete(&models.SoftwareInventory{})
+	tx.Where("device_id = ?", id).Delete(&models.WindowsService{})
+	tx.Where("device_id = ?", id).Delete(&models.ServiceCommand{})
+
+	if err := tx.Where("id = ?", id).Delete(&models.Device{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
