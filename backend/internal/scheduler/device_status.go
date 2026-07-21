@@ -12,7 +12,7 @@ func StartDeviceStatusScheduler() {
 
 	log.Println("Device Status Scheduler Started")
 
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -31,7 +31,7 @@ func StartDeviceStatusScheduler() {
 				continue
 			}
 
-			if time.Since(*device.LastSeen) > 3*time.Minute {
+			if time.Since(*device.LastSeen) > 45*time.Second {
 
 				err := database.DB.Model(&device).
 					Update("status", "offline").Error

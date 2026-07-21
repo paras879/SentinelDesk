@@ -36,7 +36,7 @@ export default function DeviceDetailPage() {
   const deviceQuery = useQuery({
     queryKey: ["device", id],
     queryFn: () => getDevice(id),
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
   });
 
   const systemInfoQuery = useQuery({

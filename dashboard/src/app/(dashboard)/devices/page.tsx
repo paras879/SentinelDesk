@@ -60,7 +60,7 @@ export default function DevicesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["devices", networkGroupID],
     queryFn: () => getDevices(networkGroupID),
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
     enabled: siteFilter === "all" || (siteFilter === "current" && !!mySiteGroup) || siteFilter === "current",
   });
 

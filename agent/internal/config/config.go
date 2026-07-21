@@ -41,7 +41,7 @@ func Load() {
 		log.Fatal("agent_key is required in config.yaml")
 	}
 	if cfg.HeartbeatInterval <= 0 {
-		cfg.HeartbeatInterval = 30
+		cfg.HeartbeatInterval = 15
 	}
 
 	log.Printf("Loaded Server URL: %s", cfg.ServerURL)
@@ -68,7 +68,7 @@ func Get() *Config {
 
 func GetHeartbeatInterval() int {
 	if cfg == nil {
-		return 30
+		return 15
 	}
 	return cfg.HeartbeatInterval
 }

@@ -1,3 +1,3 @@
 server_url: "https://sentineldesk-production-46be.up.railway.app"
 agent_key: "SentinelDeskAgentKey123456"
-heartbeat_interval: 30
+heartbeat_interval: 15
