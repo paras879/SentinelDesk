@@ -86,7 +86,7 @@ func excludeDashboardWindow(img *image.RGBA, screenBounds image.Rectangle) {
 
 func getDashboardHWND() uintptr {
 	if dashboardHWND == 0 {
-		dashboardHWND = findWindow("SentinelDesk")
+		dashboardHWND = findWindow("SentinelDesk App") // More specific to avoid matching browser tabs
 	}
 	return dashboardHWND
 }
