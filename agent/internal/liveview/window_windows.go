@@ -36,20 +36,20 @@ type rect struct {
 }
 
 func (c *Capturer) HideDashboard() {
-	hwnd := getDashboardHWND()
-	if hwnd == 0 {
-		return
-	}
-	procShowWindow.Call(hwnd, SW_MINIMIZE)
+	// hwnd := getDashboardHWND()
+	// if hwnd == 0 {
+	// 	return
+	// }
+	// procShowWindow.Call(hwnd, SW_MINIMIZE)
 	dashboardMinimized = true
 }
 
 func (c *Capturer) ShowDashboard() {
-	hwnd := getDashboardHWND()
-	if hwnd == 0 {
-		return
-	}
-	procShowWindow.Call(hwnd, SW_RESTORE)
+	// hwnd := getDashboardHWND()
+	// if hwnd == 0 {
+	// 	return
+	// }
+	// procShowWindow.Call(hwnd, SW_RESTORE)
 	dashboardMinimized = false
 }
 
