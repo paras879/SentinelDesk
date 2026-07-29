@@ -44,10 +44,10 @@ func NewStreamer() *Streamer {
 	return &Streamer{
 		capturer:    NewCapturer(1920, 1080),
 		frameChan:   make(chan *framePacket, 1),
-		quality:     85,
-		targetFPS:   2,
-		scaleWidth:  1920,
-		scaleHeight: 1080,
+		quality:     60,
+		targetFPS:   1,
+		scaleWidth:  1280,
+		scaleHeight: 720,
 	}
 }
 
@@ -56,7 +56,7 @@ func (s *Streamer) Start() {
 		if err := s.stream(); err != nil {
 			log.Println("LiveView stream error:", err)
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
 

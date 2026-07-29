@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -26,6 +28,9 @@ const logPrefix = "[SentinelDesk Agent] "
 var logFile *os.File
 
 func main() {
+	runtime.GOMAXPROCS(1)
+	debug.SetGCPercent(20)
+
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
 	log.SetPrefix(logPrefix)
 
@@ -210,7 +215,7 @@ func runSoftwareInventoryLoop(ctx context.Context) {
 
 func runProcessInventoryLoop(ctx context.Context) {
 	sendProcesses()
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(120 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -237,7 +242,7 @@ func runWindowsServicesLoop(ctx context.Context) {
 }
 
 func runCommandPollLoop(ctx context.Context) {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
