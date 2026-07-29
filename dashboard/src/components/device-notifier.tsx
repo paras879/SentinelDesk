@@ -10,6 +10,7 @@ import { useAppNotifications } from "@/contexts/NotificationContext";
 
 export function DeviceNotifier() {
   const previousDevicesRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef<boolean>(false);
   const { addNotification } = useAppNotifications();
 
   const { data } = useQuery({
@@ -24,7 +25,7 @@ export function DeviceNotifier() {
     const currentDevices = new Set(data.devices.map((d: Device) => d.ID));
     
     // Check for new devices
-    if (previousDevicesRef.current.size > 0) {
+    if (initializedRef.current) {
       const newDevices = data.devices.filter((d: Device) => !previousDevicesRef.current.has(d.ID));
       
       newDevices.forEach((device: Device) => {
@@ -38,6 +39,8 @@ export function DeviceNotifier() {
           icon: <MonitorPlay className="h-4 w-4 text-emerald-500" />,
         });
       });
+    } else {
+      initializedRef.current = true;
     }
 
     previousDevicesRef.current = currentDevices;
