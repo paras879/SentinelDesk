@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"os/user"
 	"runtime"
 	"strings"
@@ -72,7 +71,7 @@ func GetSystemInfo() (*SystemInfo, error) {
 
 // getDefaultGateway returns the default gateway IP of the selected adapter.
 func getDefaultGateway() string {
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command",
+	cmd := newExecCommand("powershell", "-NoProfile", "-NonInteractive", "-Command",
 		"Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select-Object -First 1 -ExpandProperty NextHop")
 	out, err := cmd.Output()
 	if err != nil {
@@ -98,11 +97,11 @@ func generateNetworkGroupID() string {
 	}
 
 	// Ping gateway once to populate ARP cache
-	exec.Command("ping", "-n", "1", "-w", "1000", gw).Run()
+	newExecCommand("ping", "-n", "1", "-w", "1000", gw).Run()
 
 	// Get gateway MAC from ARP
 	gwMAC := ""
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command",
+	cmd := newExecCommand("powershell", "-NoProfile", "-NonInteractive", "-Command",
 		fmt.Sprintf("(Get-NetNeighbor -IPAddress '%s' -AddressFamily IPv4 | Select-Object -First 1).LinkLayerAddress", gw))
 	out, err := cmd.Output()
 	if err == nil {
@@ -111,7 +110,7 @@ func generateNetworkGroupID() string {
 
 	// Get DNS servers
 	dns := ""
-	cmd2 := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command",
+	cmd2 := newExecCommand("powershell", "-NoProfile", "-NonInteractive", "-Command",
 		"(Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object {$_.ServerAddresses}).ServerAddresses -join ','")
 	out2, err2 := cmd2.Output()
 	if err2 == nil {
