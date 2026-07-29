@@ -1,14 +1,15 @@
 "use client";
 
-import { Bell, Search, User, LogOut, Settings, Menu } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Menu, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { navItems } from "@/components/sidebar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useAppNotifications } from "@/contexts/NotificationContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,8 @@ import Link from "next/link";
 export function Topbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
+  const { notifications, removeNotification } = useAppNotifications();
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -84,21 +87,49 @@ export function Topbar() {
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                3
-              </span>
+              {notifications.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                  {notifications.length}
+                </span>
+              )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80" align="end">
             <div className="grid gap-4">
               <div className="space-y-2">
                 <h4 className="font-medium leading-none">Notifications</h4>
-                <p className="text-sm text-muted-foreground">You have 3 unread messages.</p>
+                <p className="text-sm text-muted-foreground">
+                  {notifications.length === 0 
+                    ? "You have no unread messages." 
+                    : `You have ${notifications.length} unread message${notifications.length === 1 ? '' : 's'}.`}
+                </p>
               </div>
-              <div className="grid gap-2">
-                <div className="text-sm border-b pb-2">Device 'Admin-PC' went offline.</div>
-                <div className="text-sm border-b pb-2">New Agent Registered.</div>
-                <div className="text-sm">High memory usage on 'Server-01'.</div>
+              <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-1">
+                {notifications.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-2 text-center border-t pt-4">No new notifications</div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="group relative flex items-center justify-between border-b pb-2 pt-1 last:border-0 last:pb-0">
+                      <div 
+                        className="text-sm pr-6 cursor-pointer hover:text-primary transition-colors flex-1"
+                        onClick={() => router.push(`/devices/${notif.deviceId}`)}
+                      >
+                        {notif.message}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeNotification(notif.id);
+                        }}
+                      >
+                        <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                      </Button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </PopoverContent>

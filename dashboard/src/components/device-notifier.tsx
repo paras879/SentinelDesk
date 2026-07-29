@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { getDevices } from "@/services/devices";
 import { MonitorPlay } from "lucide-react";
 import type { Device } from "@/types";
+import { useAppNotifications } from "@/contexts/NotificationContext";
 
 export function DeviceNotifier() {
   const previousDevicesRef = useRef<Set<string>>(new Set());
+  const { addNotification } = useAppNotifications();
 
   const { data } = useQuery({
     queryKey: ["devices", "notifier"],
@@ -26,6 +28,11 @@ export function DeviceNotifier() {
       const newDevices = data.devices.filter((d: Device) => !previousDevicesRef.current.has(d.ID));
       
       newDevices.forEach((device: Device) => {
+        addNotification({
+          deviceId: device.ID,
+          message: `New Agent Registered: ${device.DeviceName || device.Hostname || "Unknown"}`,
+        });
+
         toast("New Device Registered!", {
           description: `${device.DeviceName || device.Hostname || "Unknown"} has joined the network.`,
           icon: <MonitorPlay className="h-4 w-4 text-emerald-500" />,

@@ -20,10 +20,7 @@ import (
 	"sentineldesk/agent/internal/system"
 	"sentineldesk/agent/internal/systeminfo"
 	"sentineldesk/agent/internal/windowsservice"
-
-	"golang.org/x/sys/windows/svc"
 )
-
 const logPrefix = "[SentinelDesk Agent] "
 
 var logFile *os.File
@@ -66,7 +63,7 @@ func main() {
 		}
 	}
 
-	if isSvc, err := svc.IsWindowsService(); err == nil && isSvc {
+	if isSvc, err := isWindowsService(); err == nil && isSvc {
 		if err := runService(); err != nil {
 			log.Fatalf("Service run failed: %v", err)
 		}

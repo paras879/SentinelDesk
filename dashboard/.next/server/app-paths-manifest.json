@@ -1,8 +1,0 @@
-{
-  "/(dashboard)/devices/page": "app/(dashboard)/devices/page.js",
-  "/(dashboard)/monitoring/page": "app/(dashboard)/monitoring/page.js",
-  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js",
-  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
-  "/(dashboard)/multi-view/page": "app/(dashboard)/multi-view/page.js",
-  "/(dashboard)/devices/[id]/page": "app/(dashboard)/devices/[id]/page.js"
-}
