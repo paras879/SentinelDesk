@@ -58,8 +58,8 @@ export default function ProfilePage() {
       alert("Password updated successfully!");
       setPassword("");
       setConfirmPassword("");
-    } catch (error) {
-      alert("Failed to update password.");
+    } catch (error: any) {
+      alert("Failed to update password: " + (error?.response?.data?.error || error.message));
     } finally {
       setIsSavingPassword(false);
     }
