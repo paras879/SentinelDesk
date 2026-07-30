@@ -31,12 +31,13 @@ export interface Device {
   OSVersion: string;
   IPAddress: string;
   MACAddress: string;
-  ConnectedSubnet: string;
-  NetworkAdapters: string;
-  DefaultGateway: string;
-  NetworkGroupID: string;
-  Status: string;
-  LastSeen: string | null;
+  ConnectedSubnet?: string;
+  NetworkAdapters?: any;
+  DefaultGateway?: string;
+  NetworkGroupID?: string;
+  LocationType?: string;
+  Status: "online" | "offline";
+  LastSeen?: string | null;
 }
 
 export interface DeviceSystemInfo {

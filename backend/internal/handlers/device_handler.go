@@ -148,11 +148,14 @@ func (h *DeviceHandler) GetAll(c *fiber.Ctx) error {
 
 	networkGroupID := c.Query("network_group_id")
 	networkID := c.Query("network_id")
+	locationType := c.Query("location_type")
 
 	var devices []models.Device
 	var err error
 
 	switch {
+	case locationType != "":
+		devices, err = h.service.GetByLocationType(locationType)
 	case networkGroupID != "":
 		devices, err = h.service.GetByNetworkGroupID(networkGroupID)
 	case networkID != "":
@@ -316,5 +319,38 @@ func (h *DeviceHandler) Delete(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Device deleted successfully",
+	})
+}
+
+// ==========================
+// Update Device Location Type
+// ==========================
+func (h *DeviceHandler) UpdateLocation(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid device UUID",
+		})
+	}
+
+	var req struct {
+		LocationType string `json:"location_type"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	err = h.service.UpdateLocationType(id, req.LocationType)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update location type",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Location type updated successfully",
 	})
 }

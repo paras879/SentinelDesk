@@ -1,10 +1,14 @@
 import api from "./api";
 import type { Device, DeviceSystemInfo, SoftwareItem, ProcessItem, WindowsServiceItem } from "@/types";
 
-export async function getDevices(networkGroupID?: string): Promise<{ count: number; devices: Device[] }> {
-  const params = networkGroupID ? { network_group_id: networkGroupID } : {};
+export async function getDevices(locationType?: string): Promise<{ count: number; devices: Device[] }> {
+  const params = locationType ? { location_type: locationType } : {};
   const res = await api.get("/api/v1/devices", { params });
   return res.data;
+}
+
+export async function updateDeviceLocation(id: string, locationType: string): Promise<void> {
+  await api.put(`/api/v1/devices/${id}/location`, { location_type: locationType });
 }
 
 export async function getDevice(id: string): Promise<Device> {

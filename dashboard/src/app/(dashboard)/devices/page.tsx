@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { getDevices, deleteDevice } from "@/services/devices";
-import { getMyIP } from "@/services/dashboard";
+import { getDevices, deleteDevice, updateDeviceLocation } from "@/services/devices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,42 +30,32 @@ import {
   Layers,
   Trash2,
   User,
+  Home,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type SiteFilter = "all" | "current";
+type SiteFilter = "all" | "WFH" | "Office";
 
 export default function DevicesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [siteFilter, setSiteFilter] = useState<SiteFilter>("current");
-  const [mySiteGroup, setMySiteGroup] = useState<string>("");
+  const [siteFilter, setSiteFilter] = useState<SiteFilter>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getMyIP();
-        if (res.network_group_id) {
-          setMySiteGroup(res.network_group_id);
-        } else {
-          setMySiteGroup("");
-          setSiteFilter("all");
-        }
-      } catch {
-        setMySiteGroup("");
-        setSiteFilter("all");
-      }
-    })();
-  }, []);
-
-  const networkGroupID = siteFilter === "current" ? mySiteGroup : undefined;
+  const locationType = siteFilter === "all" ? undefined : siteFilter;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["devices", networkGroupID],
-    queryFn: () => getDevices(networkGroupID),
+    queryKey: ["devices", locationType],
+    queryFn: () => getDevices(locationType),
     refetchInterval: 5_000,
-    enabled: siteFilter === "all" || (siteFilter === "current" && !!mySiteGroup) || siteFilter === "current",
   });
 
   const filtered = data?.devices?.filter(
@@ -112,20 +101,24 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Devices</h1>
           <p className="text-sm text-muted-foreground">
             {isLoading ? "Loading..." : `${data?.count || 0} devices`}
-            {siteFilter === "current" && mySiteGroup && (
-              <span className="ml-2 font-mono text-xs">(Site Group: {mySiteGroup.slice(0, 8)}...)</span>
-            )}
-          </p>
+                      </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant={siteFilter === "current" ? "default" : "outline"}
-            onClick={() => setSiteFilter("current")}
-            disabled={!mySiteGroup}
+            variant={siteFilter === "WFH" ? "default" : "outline"}
+            onClick={() => setSiteFilter("WFH")}
+          >
+            <Home className="mr-1 h-4 w-4" />
+            WFH
+          </Button>
+          <Button
+            size="sm"
+            variant={siteFilter === "Office" ? "default" : "outline"}
+            onClick={() => setSiteFilter("Office")}
           >
             <Building2 className="mr-1 h-4 w-4" />
-            Current Site
+            Office
           </Button>
           <Button
             size="sm"
@@ -142,7 +135,7 @@ export default function DevicesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="text-lg">
-              {siteFilter === "current" ? "Current Site Devices" : "All Devices"}
+              {siteFilter === "all" ? "All Devices" : `${siteFilter} Devices`}
             </CardTitle>
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -172,6 +165,7 @@ export default function DevicesPage() {
                     <TableHead className="whitespace-nowrap">Device ID</TableHead>
                     <TableHead className="whitespace-nowrap">Current IP</TableHead>
                     <TableHead className="whitespace-nowrap">Site Group</TableHead>
+                    <TableHead className="whitespace-nowrap">Location</TableHead>
                     <TableHead className="whitespace-nowrap">User</TableHead>
                     <TableHead className="whitespace-nowrap">Last Seen</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
@@ -181,9 +175,7 @@ export default function DevicesPage() {
                   {filtered?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        {siteFilter === "current" && !mySiteGroup
-                          ? "Unable to detect your site. Switch to All Devices."
-                          : search
+                        {search
                             ? "No devices match your search"
                             : "No devices registered yet"}
                       </TableCell>
@@ -212,6 +204,34 @@ export default function DevicesPage() {
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <Select
+                            disabled={updatingId === device.ID}
+                            value={device.LocationType || "Unassigned"}
+                            onValueChange={async (val) => {
+                              try {
+                                setUpdatingId(device.ID);
+                                await updateDeviceLocation(device.ID, val);
+                                queryClient.invalidateQueries({ queryKey: ["devices"] });
+                                toast.success("Location updated");
+                              } catch {
+                                toast.error("Failed to update location");
+                              } finally {
+                                setUpdatingId(null);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-[130px] text-xs">
+                              <SelectValue placeholder="Location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Unassigned">Unassigned</SelectItem>
+                              <SelectItem value="WFH">WFH</SelectItem>
+                              <SelectItem value="Office">Office</SelectItem>
+                              <SelectItem value="Admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                           {device.Username ? (

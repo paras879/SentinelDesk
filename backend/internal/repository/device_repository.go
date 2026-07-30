@@ -56,6 +56,16 @@ func (r *DeviceRepository) GetByNetworkGroupID(groupID string) ([]models.Device,
 	return devices, err
 }
 
+// Get Devices By Location Type
+func (r *DeviceRepository) GetByLocationType(locationType string) ([]models.Device, error) {
+	var devices []models.Device
+	err := database.DB.
+		Where("location_type = ?", locationType).
+		Order("created_at DESC").
+		Find(&devices).Error
+	return devices, err
+}
+
 // Find Device By IP Address (returns most recently seen device with this IP)
 func (r *DeviceRepository) FindDeviceByIP(ip string) (*models.Device, error) {
 	var device models.Device

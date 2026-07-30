@@ -113,6 +113,24 @@ func (s *DeviceService) GetByNetworkGroupID(groupID string) ([]models.Device, er
 	return s.repo.GetByNetworkGroupID(groupID)
 }
 
+// Get Devices By Location Type
+func (s *DeviceService) GetByLocationType(locationType string) ([]models.Device, error) {
+	if locationType == "" {
+		return s.repo.GetAll()
+	}
+	return s.repo.GetByLocationType(locationType)
+}
+
+// Update Device Location Type
+func (s *DeviceService) UpdateLocationType(id uuid.UUID, locationType string) error {
+	device, err := s.repo.GetByDeviceID(id)
+	if err != nil || device == nil {
+		return errors.New("device not found")
+	}
+	device.LocationType = locationType
+	return s.repo.Update(device)
+}
+
 // Find Device By IP
 func (s *DeviceService) FindDeviceByIP(ip string) (*models.Device, error) {
 	return s.repo.FindDeviceByIP(ip)

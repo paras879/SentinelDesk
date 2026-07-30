@@ -17,6 +17,7 @@ type Device struct {
 	NetworkAdapters string `gorm:"type:jsonb"`
 	DefaultGateway  string `gorm:"size:45"`
 	NetworkGroupID  string `gorm:"type:varchar(64);index"`
+	LocationType    string `gorm:"size:50;default:'Unassigned'"`
 
 	Status string `gorm:"default:offline"`
 
