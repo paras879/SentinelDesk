@@ -58,13 +58,19 @@ export default function DevicesPage() {
     refetchInterval: 5_000,
   });
 
-  const filtered = data?.devices?.filter(
-    (d) =>
-      d.Hostname?.toLowerCase().includes(search.toLowerCase()) ||
-      d.ID?.toLowerCase().includes(search.toLowerCase()) ||
-      d.IPAddress?.toLowerCase().includes(search.toLowerCase()) ||
-      d.ConnectedSubnet?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = data?.devices?.filter((d) => {
+    if (siteFilter !== "all" && d.LocationType !== siteFilter) {
+      return false;
+    }
+    const lowerSearch = search.toLowerCase();
+    if (!search) return true;
+    return (
+      d.Hostname?.toLowerCase().includes(lowerSearch) ||
+      d.ID?.toLowerCase().includes(lowerSearch) ||
+      d.IPAddress?.toLowerCase().includes(lowerSearch) ||
+      d.ConnectedSubnet?.toLowerCase().includes(lowerSearch)
+    );
+  });
 
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete the device ${name}? This action cannot be undone.`)) {
