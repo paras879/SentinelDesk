@@ -31,6 +31,8 @@ import {
   Trash2,
   User,
   Home,
+  Zap,
+  Sparkles,
 } from "lucide-react";
 import {
   Select,
@@ -39,6 +41,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getPlanInfo } from "@/services/plan";
+import { UpgradeModal } from "@/components/upgrade-modal";
+import { cn } from "@/lib/utils";
 
 type SiteFilter = "all" | "WFH" | "Office";
 
@@ -49,6 +54,13 @@ export default function DevicesPage() {
   const [siteFilter, setSiteFilter] = useState<SiteFilter>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const { data: plan } = useQuery({
+    queryKey: ["planInfo"],
+    queryFn: getPlanInfo,
+    refetchInterval: 10_000,
+  });
 
   const locationType = siteFilter === "all" ? undefined : siteFilter;
 
@@ -133,6 +145,50 @@ export default function DevicesPage() {
           >
             <Globe className="mr-1 h-4 w-4" />
             All Devices
+          </Button>
+        </div>
+      </div>
+
+      {/* SaaS Plan & Quota Banner */}
+      <div className="rounded-xl border bg-gradient-to-r from-card via-card to-primary/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm flex items-center gap-1.5 text-foreground">
+              <Zap className="h-4 w-4 text-primary fill-primary" />
+              {plan?.plan_name || "Starter"} Plan Endpoint Quota
+            </span>
+            <Badge variant={plan?.is_limit_reached ? "destructive" : "secondary"} className="text-xs">
+              {plan?.is_limit_reached ? "Limit Reached" : `${plan?.remaining_slots ?? (3 - (data?.count || 0))} slots available`}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {plan?.is_limit_reached
+              ? "You have reached the maximum allowed devices (3/3) on the Starter Plan. Upgrade to Pro to connect additional laptops."
+              : `Monitoring ${data?.count || 1} of ${plan?.max_devices || 3} allowed endpoints.`}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden sm:flex flex-col items-end gap-1 text-xs">
+            <span className="text-muted-foreground font-medium">
+              Capacity: {Math.round(((data?.count || 1) / (plan?.max_devices || 3)) * 100)}%
+            </span>
+            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  plan?.is_limit_reached ? "bg-destructive" : "bg-primary"
+                )}
+                style={{ width: `${Math.min(100, Math.round(((data?.count || 1) / (plan?.max_devices || 3)) * 100))}%` }}
+              />
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setUpgradeOpen(true)}
+            className="font-semibold text-xs gap-1.5 shadow-sm bg-gradient-to-r from-amber-500 to-primary text-white hover:opacity-90"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Upgrade Plan
           </Button>
         </div>
       </div>
@@ -286,6 +342,13 @@ export default function DevicesPage() {
           )}
         </CardContent>
       </Card>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        currentDevices={data?.count}
+        maxDevices={plan?.max_devices}
+      />
     </div>
   );
 }

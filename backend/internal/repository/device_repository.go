@@ -146,3 +146,11 @@ func (r *DeviceRepository) Delete(id uuid.UUID) error {
 
 	return tx.Commit().Error
 }
+
+// Count returns the total number of registered devices
+func (r *DeviceRepository) Count() (int64, error) {
+	var count int64
+	err := database.DB.Model(&models.Device{}).Count(&count).Error
+	return count, err
+}
+

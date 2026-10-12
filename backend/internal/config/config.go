@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -27,6 +28,10 @@ type Config struct {
 	// Agent API Key
 	AgentAPIKey string
 
+	// Plan & Licensing
+	MaxDevices int
+	PlanName   string
+
 	// CORS
 	AllowedOrigins string
 }
@@ -38,12 +43,21 @@ func LoadConfig() *Config {
 		log.Println("Warning: .env file not found, using system environment variables")
 	}
 
+	maxDev, err := strconv.Atoi(getEnv("MAX_DEVICES", "3"))
+	if err != nil {
+		maxDev = 3
+	}
+
 	return &Config{
 		// Application
 		AppName:    getEnv("APP_NAME", "SentinelDesk"),
 		AppPort:    getEnv("PORT", "8080"),
 		AppEnv:     getEnv("APP_ENV", "development"),
 		AppVersion: getEnv("APP_VERSION", "1.0.0"),
+
+		// Plan & Licensing
+		MaxDevices: maxDev,
+		PlanName:   getEnv("PLAN_NAME", "Starter"),
 
 		// Database
 		DatabaseURL: getEnv("DATABASE_URL", ""),

@@ -6,17 +6,20 @@ import (
 
 	"github.com/google/uuid"
 
+	"sentineldesk/backend/internal/config"
 	"sentineldesk/backend/internal/models"
 	"sentineldesk/backend/internal/repository"
 )
 
 type DeviceService struct {
 	repo *repository.DeviceRepository
+	cfg  *config.Config
 }
 
 func NewDeviceService() *DeviceService {
 	return &DeviceService{
 		repo: repository.NewDeviceRepository(),
+		cfg:  config.LoadConfig(),
 	}
 }
 
@@ -55,6 +58,14 @@ func (s *DeviceService) Register(
 		return true, s.repo.Update(existing)
 	}
 
+	// Enforce Plan Device Limits for new registrations
+	if s.cfg.MaxDevices > 0 {
+		count, err := s.repo.Count()
+		if err == nil && count >= int64(s.cfg.MaxDevices) {
+			return false, errors.New("DEVICE_LIMIT_EXCEEDED: Plan limit reached. Upgrade to Pro Plan to connect more devices.")
+		}
+	}
+
 	device := &models.Device{
 		BaseModel:       models.BaseModel{ID: deviceID},
 		DeviceName:      deviceName,
@@ -72,6 +83,40 @@ func (s *DeviceService) Register(
 	}
 
 	return false, s.repo.Create(device)
+}
+
+// Get Current Plan and Device Usage Information
+func (s *DeviceService) GetPlanInfo() (map[string]interface{}, error) {
+	count, err := s.repo.Count()
+	if err != nil {
+		count = 0
+	}
+
+	maxDev := s.cfg.MaxDevices
+	planName := s.cfg.PlanName
+	if planName == "" {
+		if maxDev <= 3 && maxDev > 0 {
+			planName = "Starter"
+		} else if maxDev <= 25 && maxDev > 0 {
+			planName = "Pro"
+		} else {
+			planName = "Enterprise"
+		}
+	}
+
+	isLimitReached := maxDev > 0 && count >= int64(maxDev)
+	remaining := maxDev - int(count)
+	if remaining < 0 || maxDev <= 0 {
+		remaining = 0
+	}
+
+	return map[string]interface{}{
+		"plan_name":        planName,
+		"max_devices":      maxDev,
+		"current_devices":  count,
+		"is_limit_reached": isLimitReached,
+		"remaining_slots":  remaining,
+	}, nil
 }
 
 // Get All Devices

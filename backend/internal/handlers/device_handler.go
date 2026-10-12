@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
@@ -121,6 +122,13 @@ func (h *DeviceHandler) Register(c *fiber.Ctx) error {
 
 	if err != nil {
 		log.Printf("Register: Service error for device_id=%s: %v", req.DeviceID, err)
+		if strings.Contains(err.Error(), "DEVICE_LIMIT_EXCEEDED") {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error":            "DEVICE_LIMIT_EXCEEDED",
+				"message":          "Device limit reached on your current plan (Max 3 devices on Starter Plan). Upgrade your plan to connect more endpoints.",
+				"upgrade_required": true,
+			})
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -137,6 +145,17 @@ func (h *DeviceHandler) Register(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "Device registered successfully",
 	})
+}
+
+// GetPlanInfo returns current subscription plan details and device quota
+func (h *DeviceHandler) GetPlanInfo(c *fiber.Ctx) error {
+	info, err := h.service.GetPlanInfo()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	return c.JSON(info)
 }
 
 // ==========================

@@ -7,14 +7,24 @@ import { LiveStreamPlayer } from "@/components/live-stream-player";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Grid, Monitor, AlertTriangle, MonitorPlay } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Grid, Monitor, AlertTriangle, MonitorPlay, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getPlanInfo } from "@/services/plan";
+import { UpgradeModal } from "@/components/upgrade-modal";
 
-const MAX_DEVICES = 6;
+const DEFAULT_SYSTEM_MAX = 6;
 
 export default function MultiViewPage() {
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   
+  const { data: plan } = useQuery({
+    queryKey: ["planInfo"],
+    queryFn: getPlanInfo,
+    refetchInterval: 10_000,
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["devices", "multi-view"],
     queryFn: () => getDevices(),
@@ -23,12 +33,17 @@ export default function MultiViewPage() {
 
   const onlineDevices = data?.devices?.filter((d: any) => d.Status === "online") || [];
 
+  const maxAllowed = plan?.max_devices && plan.max_devices > 0 
+    ? Math.min(plan.max_devices, DEFAULT_SYSTEM_MAX) 
+    : DEFAULT_SYSTEM_MAX;
+
   const handleToggleDevice = (deviceId: string) => {
     setSelectedDeviceIds((prev) => {
       if (prev.includes(deviceId)) {
         return prev.filter((id) => id !== deviceId);
       }
-      if (prev.length >= MAX_DEVICES) {
+      if (prev.length >= maxAllowed) {
+        setUpgradeOpen(true);
         return prev;
       }
       return [...prev, deviceId];
@@ -62,15 +77,27 @@ export default function MultiViewPage() {
             <Grid className="h-6 w-6" />
             Multi-Live View
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Monitor up to {MAX_DEVICES} devices simultaneously. (Selected: {selectedDeviceIds.length}/{MAX_DEVICES})
+          <p className="text-sm text-muted-foreground flex items-center gap-2 mt-0.5">
+            <span>
+              Monitor up to {maxAllowed} devices simultaneously ({plan?.plan_name || "Starter"} Plan). (Selected: {selectedDeviceIds.length}/{maxAllowed})
+            </span>
           </p>
         </div>
-        {selectedDeviceIds.length > 0 && (
-          <Button variant="outline" size="sm" onClick={handleClearAll}>
-            Clear All
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setUpgradeOpen(true)}
+            className="font-semibold text-xs gap-1.5 shadow-sm bg-gradient-to-r from-amber-500 to-primary text-white hover:opacity-90"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Upgrade Plan
           </Button>
-        )}
+          {selectedDeviceIds.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleClearAll}>
+              Clear All
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
@@ -97,15 +124,21 @@ export default function MultiViewPage() {
               <div className="divide-y">
                 {onlineDevices.map((device: any) => {
                   const isSelected = selectedDeviceIds.includes(device.ID);
-                  const isDisabled = !isSelected && selectedDeviceIds.length >= MAX_DEVICES;
+                  const isDisabled = !isSelected && selectedDeviceIds.length >= maxAllowed;
 
                   return (
                     <div
                       key={device.ID}
                       className={`flex items-center space-x-3 p-3 hover:bg-muted/50 transition-colors ${
-                        isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                        isDisabled ? "opacity-60 cursor-pointer" : "cursor-pointer"
                       }`}
-                      onClick={() => !isDisabled && handleToggleDevice(device.ID)}
+                      onClick={() => {
+                        if (isDisabled) {
+                          setUpgradeOpen(true);
+                        } else {
+                          handleToggleDevice(device.ID);
+                        }
+                      }}
                     >
                       <Checkbox
                         checked={isSelected}
@@ -164,6 +197,13 @@ export default function MultiViewPage() {
           )}
         </div>
       </div>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        currentDevices={selectedDeviceIds.length}
+        maxDevices={plan?.max_devices}
+      />
     </div>
   );
 }

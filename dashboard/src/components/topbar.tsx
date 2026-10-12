@@ -1,8 +1,11 @@
 "use client";
 
-import { Bell, Search, User, LogOut, Settings, Menu, X } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Menu, X, Zap, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { navItems } from "@/components/sidebar";
@@ -10,6 +13,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useAppNotifications } from "@/contexts/NotificationContext";
+import { getPlanInfo } from "@/services/plan";
+import { UpgradeModal } from "@/components/upgrade-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +36,13 @@ export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { notifications, removeNotification } = useAppNotifications();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const { data: plan } = useQuery({
+    queryKey: ["planInfo"],
+    queryFn: getPlanInfo,
+    refetchInterval: 10_000,
+  });
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -81,6 +93,25 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
+        {/* SaaS Plan Badge & Upgrade Button */}
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="hidden sm:inline-flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold border-primary/30 bg-primary/10 text-primary"
+          >
+            <Zap className="h-3 w-3 fill-primary text-primary" />
+            <span>{plan?.plan_name || "Starter"} ({plan?.current_devices ?? 1}/{plan?.max_devices ?? 3})</span>
+          </Badge>
+          <Button
+            size="sm"
+            onClick={() => setUpgradeOpen(true)}
+            className="h-8 gap-1.5 px-3 text-xs font-bold bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90 text-white shadow-sm transition-transform active:scale-95"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Upgrade</span>
+          </Button>
+        </div>
+
         <ThemeToggle />
         
         <Popover>
@@ -173,6 +204,13 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        currentDevices={plan?.current_devices}
+        maxDevices={plan?.max_devices}
+      />
     </header>
   );
 }

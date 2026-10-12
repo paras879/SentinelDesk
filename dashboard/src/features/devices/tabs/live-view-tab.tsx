@@ -93,7 +93,8 @@ export function LiveViewTab({ deviceId }: Props) {
     const token = localStorage.getItem("sentineldesk_token");
     if (!token) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const apiUrl = rawUrl.replace(/\/+$/, "");
     const wsBase = apiUrl.replace(/^http/, "ws");
     const url = `${wsBase}/ws/live/view/${deviceId}?token=${token}`;
 
