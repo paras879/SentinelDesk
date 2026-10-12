@@ -124,30 +124,30 @@ export function UpgradeModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-background border border-border/70 shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-4xl w-[96vw] max-h-[88vh] overflow-y-auto overscroll-contain p-0 bg-background border border-border/70 shadow-2xl rounded-2xl">
         {/* VIEW 1: PRICING PLANS */}
         {view === "plans" && (
-          <div className="p-6 sm:p-8 space-y-6">
-            <DialogHeader className="text-center space-y-2">
+          <div className="p-4 sm:p-5 md:p-6 space-y-3.5">
+            <DialogHeader className="text-center space-y-1">
               <div className="flex items-center justify-center gap-2">
-                <span className="p-2.5 rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                  <Zap className="h-6 w-6" />
+                <span className="p-1.5 rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+                  <Zap className="h-4 w-4" />
                 </span>
+                <DialogTitle className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                  Enterprise Endpoint <span className="text-primary">Licensing</span>
+                </DialogTitle>
               </div>
-              <DialogTitle className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Enterprise Endpoint <span className="text-primary">Licensing</span>
-              </DialogTitle>
-              <DialogDescription className="text-sm sm:text-base max-w-xl mx-auto">
+              <DialogDescription className="text-xs max-w-md mx-auto text-muted-foreground">
                 Secure more workstations, unlock the multi-screen wall, and get 24/7 dedicated support.
               </DialogDescription>
 
               {/* Billing Toggle (Monthly / Yearly) */}
-              <div className="flex items-center justify-center pt-2">
-                <div className="flex items-center bg-muted/60 p-1 rounded-full border border-border/80 text-xs font-semibold">
+              <div className="flex items-center justify-center pt-0.5">
+                <div className="flex items-center bg-muted/60 p-0.5 rounded-full border border-border/80 text-xs font-semibold">
                   <button
                     type="button"
                     onClick={() => setBillingCycle("monthly")}
-                    className={`px-4 py-1.5 rounded-full transition-all ${
+                    className={`px-3 py-1 rounded-full transition-all ${
                       billingCycle === "monthly"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -158,7 +158,7 @@ export function UpgradeModal({
                   <button
                     type="button"
                     onClick={() => setBillingCycle("yearly")}
-                    className={`px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-all ${
+                    className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all ${
                       billingCycle === "yearly"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -174,66 +174,66 @@ export function UpgradeModal({
             </DialogHeader>
 
             {/* Pricing Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {/* Starter Plan */}
-              <div className="rounded-2xl border bg-card/40 p-5 flex flex-col justify-between shadow-sm relative">
+              <div className="rounded-2xl border bg-card/40 p-4 flex flex-col justify-between shadow-sm relative">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className="font-bold text-lg">Starter</h3>
-                    <Badge variant="secondary" className="text-xs">
+                    <h3 className="font-bold text-base">Starter</h3>
+                    <Badge variant="secondary" className="text-[11px] px-2 py-0">
                       Current Plan
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">
                     Basic endpoint monitoring for small setups.
                   </p>
-                  <div className="mb-4">
-                    <span className="text-3xl font-extrabold">₹0</span>
+                  <div className="mb-2">
+                    <span className="text-2xl font-extrabold">₹0</span>
                     <span className="text-xs text-muted-foreground ml-1">/ forever</span>
                   </div>
-                  <ul className="space-y-2.5 text-xs text-muted-foreground">
+                  <ul className="space-y-1.5 text-xs text-muted-foreground">
                     {BILLING_CONFIG.plans.starter.features.map((feat, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary shrink-0" />
+                      <li key={i} className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span>{feat}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <Button variant="outline" className="w-full mt-6 text-xs" disabled>
+                <Button variant="outline" className="w-full mt-3 text-xs h-8" disabled>
                   Active Plan
                 </Button>
               </div>
 
               {/* Professional Plan */}
-              <div className="rounded-2xl border-2 border-primary bg-gradient-to-b from-primary/5 via-card to-card p-5 flex flex-col justify-between shadow-xl relative ring-1 ring-primary/20">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground text-[10px] px-3 py-0.5 shadow font-semibold flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> MOST POPULAR
+              <div className="rounded-2xl border-2 border-primary bg-gradient-to-b from-primary/5 via-card to-card p-4 flex flex-col justify-between shadow-xl relative ring-1 ring-primary/20">
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground text-[10px] px-2.5 py-0 shadow font-semibold flex items-center gap-1">
+                    <Sparkles className="h-2.5 w-2.5" /> MOST POPULAR
                   </Badge>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className="font-bold text-lg text-primary">Professional</h3>
-                    <Badge className="bg-primary/10 text-primary border-primary/25 text-xs">
+                    <h3 className="font-bold text-base text-primary">Professional</h3>
+                    <Badge className="bg-primary/10 text-primary border-primary/25 text-[11px] px-2 py-0">
                       25 Endpoints
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">
                     Complete monitoring & control for corporate teams.
                   </p>
-                  <div className="mb-4">
-                    <span className="text-3xl font-extrabold">
+                  <div className="mb-2">
+                    <span className="text-2xl font-extrabold">
                       ₹{proPrice.toLocaleString("en-IN")}
                     </span>
                     <span className="text-xs text-muted-foreground ml-1">
                       / {billingCycle === "monthly" ? "month" : "year"}
                     </span>
                   </div>
-                  <ul className="space-y-2 text-xs">
+                  <ul className="space-y-1 text-xs">
                     {BILLING_CONFIG.plans.pro.features.map((feat, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary shrink-0 font-bold" />
+                      <li key={i} className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-primary shrink-0 font-bold" />
                         <span className="font-medium">{feat}</span>
                       </li>
                     ))}
@@ -241,20 +241,20 @@ export function UpgradeModal({
                 </div>
 
                 {/* Primary & Direct Actions */}
-                <div className="space-y-2 mt-6">
+                <div className="space-y-1.5 mt-3">
                   {/* Online Instant Payment */}
                   <Button
                     onClick={() => {
                       setSelectedPlan("pro");
                       setView("checkout");
                     }}
-                    className="w-full text-xs font-bold h-10 shadow-md bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90 text-white flex items-center justify-center gap-1.5"
+                    className="w-full text-xs font-bold h-8.5 shadow-md bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90 text-white flex items-center justify-center gap-1.5"
                   >
-                    <CreditCard className="h-4 w-4" /> Pay Online (Instant UPI / Cards)
+                    <CreditCard className="h-3.5 w-3.5" /> Pay Online (Instant UPI / Cards)
                   </Button>
 
                   {/* Secondary WhatsApp & Email Options */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <Button
                       variant="outline"
                       onClick={() =>
@@ -263,7 +263,7 @@ export function UpgradeModal({
                           `₹${proPrice}/${billingCycle}`
                         )
                       }
-                      className="text-xs h-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30"
+                      className="text-xs h-7.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30 px-2"
                     >
                       <MessageSquare className="h-3.5 w-3.5 mr-1" /> WhatsApp
                     </Button>
@@ -275,7 +275,7 @@ export function UpgradeModal({
                           `₹${proPrice}/${billingCycle}`
                         )
                       }
-                      className="text-xs h-8"
+                      className="text-xs h-7.5 px-2"
                     >
                       <Mail className="h-3.5 w-3.5 mr-1" /> Email Invoice
                     </Button>
@@ -284,31 +284,31 @@ export function UpgradeModal({
               </div>
 
               {/* Enterprise Plan */}
-              <div className="rounded-2xl border bg-card/40 p-5 flex flex-col justify-between shadow-sm">
+              <div className="rounded-2xl border bg-card/40 p-4 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className="font-bold text-lg">Enterprise</h3>
-                    <Badge variant="outline" className="text-xs">
+                    <h3 className="font-bold text-base">Enterprise</h3>
+                    <Badge variant="outline" className="text-[11px] px-2 py-0">
                       Custom
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">
                     Dedicated server infrastructure & unlimited seats.
                   </p>
-                  <div className="mb-4">
-                    <span className="text-3xl font-extrabold">Custom</span>
+                  <div className="mb-2">
+                    <span className="text-2xl font-extrabold">Custom</span>
                     <span className="text-xs text-muted-foreground ml-1">/ deployment</span>
                   </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground">
+                  <ul className="space-y-1.5 text-xs text-muted-foreground">
                     {BILLING_CONFIG.plans.enterprise.features.map((feat, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary shrink-0" />
+                      <li key={i} className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span>{feat}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="space-y-2 mt-6">
+                <div className="space-y-1.5 mt-3">
                   <Button
                     variant="outline"
                     onClick={() =>
@@ -317,7 +317,7 @@ export function UpgradeModal({
                         "Custom Corporate Pricing"
                       )
                     }
-                    className="w-full text-xs flex items-center justify-center gap-1.5 font-semibold"
+                    className="w-full text-xs flex items-center justify-center gap-1.5 font-semibold h-8.5"
                   >
                     <Server className="h-3.5 w-3.5" /> Talk to Enterprise Sales
                   </Button>
@@ -329,7 +329,7 @@ export function UpgradeModal({
                         "Custom Corporate Pricing"
                       )
                     }
-                    className="w-full text-xs h-8 text-muted-foreground"
+                    className="w-full text-xs h-7.5 text-muted-foreground"
                   >
                     <Mail className="h-3.5 w-3.5 mr-1" /> Contact via Email
                   </Button>
@@ -338,9 +338,9 @@ export function UpgradeModal({
             </div>
 
             {/* Trust Footer */}
-            <div className="text-center text-xs text-muted-foreground pt-4 border-t flex items-center justify-center gap-3">
+            <div className="text-center text-[11px] text-muted-foreground pt-2.5 border-t flex items-center justify-center gap-3">
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <ShieldCheck className="h-4 w-4" /> 100% Secure Transaction
+                <ShieldCheck className="h-3.5 w-3.5" /> 100% Secure Transaction
               </span>
               <span>•</span>
               <span>Instant Activation</span>
@@ -352,42 +352,42 @@ export function UpgradeModal({
 
         {/* VIEW 2: INSTANT CHECKOUT (UPI QR & GATEWAY) */}
         {view === "checkout" && (
-          <div className="p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
+          <div className="p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setView("plans")}
-                className="gap-1.5 text-xs font-semibold"
+                className="gap-1.5 text-xs font-semibold h-8"
               >
                 <ArrowLeft className="h-4 w-4" /> Back to Plans
               </Button>
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-emerald-500" />
-                <span className="text-xs font-semibold text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-[11px] font-semibold text-muted-foreground">
                   256-Bit SSL Encrypted Checkout
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
               {/* Left Column: QR Code & UPI Details */}
-              <div className="flex flex-col items-center text-center p-5 rounded-2xl border bg-muted/20 space-y-4">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              <div className="flex flex-col items-center text-center p-4 rounded-2xl border bg-muted/20 space-y-3">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
                     Scan with any UPI App
                   </span>
-                  <h4 className="text-base font-bold">
+                  <h4 className="text-sm font-bold">
                     GPay • PhonePe • Paytm • BHIM
                   </h4>
                 </div>
 
                 {/* Dynamic Live UPI QR Code */}
-                <div className="bg-white p-3 rounded-2xl shadow-md border border-border">
+                <div className="bg-white p-2.5 rounded-2xl shadow-md border border-border">
                   <img
                     src={qrCodeUrl}
                     alt="UPI Payment QR Code"
-                    className="w-48 h-48 rounded-xl object-contain"
+                    className="w-40 h-40 rounded-xl object-contain"
                   />
                 </div>
 
