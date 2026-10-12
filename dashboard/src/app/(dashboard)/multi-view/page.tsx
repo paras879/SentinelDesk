@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid, Monitor, AlertTriangle, MonitorPlay, Sparkles } from "lucide-react";
+import { Grid, Monitor, AlertTriangle, MonitorPlay, Sparkles, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPlanInfo } from "@/services/plan";
 import { UpgradeModal } from "@/components/upgrade-modal";
@@ -87,9 +87,9 @@ export default function MultiViewPage() {
           <Button
             size="sm"
             onClick={() => setUpgradeOpen(true)}
-            className="font-semibold text-xs gap-1.5 shadow-sm bg-gradient-to-r from-amber-500 to-primary text-white hover:opacity-90"
+            className="font-medium text-xs gap-1.5 h-8"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5" />
             Upgrade Plan
           </Button>
           {selectedDeviceIds.length > 0 && (

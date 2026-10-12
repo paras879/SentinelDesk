@@ -248,7 +248,7 @@ export function UpgradeModal({
                       setSelectedPlan("pro");
                       setView("checkout");
                     }}
-                    className="w-full text-xs font-bold h-8.5 shadow-md bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90 text-white flex items-center justify-center gap-1.5"
+                    className="w-full text-xs font-semibold h-8.5 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-1.5"
                   >
                     <CreditCard className="h-3.5 w-3.5" /> Pay Online (Instant UPI / Cards)
                   </Button>

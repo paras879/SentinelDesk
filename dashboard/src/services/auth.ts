@@ -10,3 +10,9 @@ export async function updateProfile(data: { name?: string; email?: string; passw
   const res = await api.put("/api/v1/admin/profile", data);
   return res.data;
 }
+
+export async function registerUser(data: { name: string; email: string; password: string }) {
+  const res = await api.post("/api/v1/auth/register", data);
+  return res.data;
+}
+

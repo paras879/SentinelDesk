@@ -185,9 +185,9 @@ export default function DevicesPage() {
           <Button
             size="sm"
             onClick={() => setUpgradeOpen(true)}
-            className="font-semibold text-xs gap-1.5 shadow-sm bg-gradient-to-r from-amber-500 to-primary text-white hover:opacity-90"
+            className="font-medium text-xs gap-1.5 h-8"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5" />
             Upgrade Plan
           </Button>
         </div>

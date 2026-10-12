@@ -104,10 +104,11 @@ export function Topbar() {
           </Badge>
           <Button
             size="sm"
+            variant="outline"
             onClick={() => setUpgradeOpen(true)}
-            className="h-8 gap-1.5 px-3 text-xs font-bold bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90 text-white shadow-sm transition-transform active:scale-95"
+            className="h-8 gap-1.5 px-3 text-xs font-medium border-border/80 bg-background/80 hover:bg-accent text-foreground transition-all shadow-none"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5 text-primary" />
             <span>Upgrade</span>
           </Button>
         </div>
