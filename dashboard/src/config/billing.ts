@@ -4,18 +4,18 @@
  */
 export const BILLING_CONFIG = {
   merchantName: process.env.NEXT_PUBLIC_MERCHANT_NAME || "SentinelDesk Security",
-  
+
   // Enter your WhatsApp number with country code (e.g., "919876543210")
-  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919999999999",
+  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "+918791559154",
 
   // Enter your official support/sales email
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "parastomar@recenturesoft.com",
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "parastomar851@gmail.com",
 
   // Enter your UPI ID for receiving payments (e.g., "name@okaxis", "name@upi", "name@paytm")
-  upiId: process.env.NEXT_PUBLIC_UPI_ID || "parastomar@upi",
+  upiId: process.env.NEXT_PUBLIC_UPI_ID || "8791559154-4@axl",
 
   // Optional direct payment link (e.g. Razorpay Payment Page link / Cashfree / Stripe link)
-  paymentLink: process.env.NEXT_PUBLIC_PAYMENT_LINK || "",
+  paymentLink: process.env.NEXT_PUBLIC_PAYMENT_LINK || "https://pmny.in/@sentineldesk",
 
   plans: {
     starter: {

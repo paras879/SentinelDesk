@@ -82,10 +82,8 @@ export function UpgradeModal({
     const text = encodeURIComponent(
       `Hello! I want to upgrade my SentinelDesk license to *${planName} Plan* (${priceText}).\nCurrent active devices: ${currentDevices}.\nPlease provide activation details.`
     );
-    window.open(
-      `https://wa.me/${BILLING_CONFIG.whatsappNumber}?text=${text}`,
-      "_blank"
-    );
+    const cleanPhone = BILLING_CONFIG.whatsappNumber.replace(/[^0-9]/g, "");
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, "_blank");
   };
 
   const handleEmailContact = (planName: string, priceText: string) => {
@@ -427,6 +425,18 @@ export function UpgradeModal({
                 >
                   <ExternalLink className="h-3.5 w-3.5" /> Open in UPI App
                 </a>
+
+                {/* Optional Online Payment Gateway Link (PayUMoney / Cards) */}
+                {BILLING_CONFIG.paymentLink && (
+                  <a
+                    href={BILLING_CONFIG.paymentLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold shadow-sm"
+                  >
+                    <CreditCard className="h-3.5 w-3.5" /> Pay via Card / NetBanking
+                  </a>
+                )}
               </div>
 
               {/* Right Column: Order Summary & UTR Submission */}
