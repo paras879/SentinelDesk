@@ -1,6 +1,7 @@
 package liveview
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
@@ -13,9 +14,14 @@ func HandleAdminView(c *websocket.Conn) {
 		return
 	}
 
-	stream := GlobalHub.GetOrCreate(deviceID)
-
 	viewerID := c.RemoteAddr().String()
+
+	if GlobalRedisHub != nil {
+		GlobalRedisHub.RegisterLocalViewer(deviceID, viewerID, c)
+		defer GlobalRedisHub.UnregisterLocalViewer(deviceID, viewerID)
+	}
+
+	stream := GlobalHub.GetOrCreate(deviceID)
 
 	stream.mu.Lock()
 	stream.Viewers[viewerID] = c
@@ -61,15 +67,19 @@ func HandleAdminView(c *websocket.Conn) {
 
 		log.Printf("[Control] device=%s viewer=%s type=%s", deviceID, viewerID, pkt.Type)
 
-		stream.mu.RLock()
-		agent := stream.Agent
-		stream.mu.RUnlock()
+		if GlobalRedisHub != nil {
+			_ = GlobalRedisHub.PublishControl(context.Background(), deviceID, msg)
+		} else {
+			stream.mu.RLock()
+			agent := stream.Agent
+			stream.mu.RUnlock()
 
-		if agent != nil {
-			select {
-			case stream.ControlChan <- msg:
-			default:
-				log.Printf("[Control] device=%s control channel full, dropping event", deviceID)
+			if agent != nil {
+				select {
+				case stream.ControlChan <- msg:
+				default:
+					log.Printf("[Control] device=%s control channel full, dropping event", deviceID)
+				}
 			}
 		}
 	}

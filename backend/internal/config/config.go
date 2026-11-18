@@ -34,6 +34,9 @@ type Config struct {
 
 	// CORS
 	AllowedOrigins string
+
+	// Redis (Pub/Sub for scaling liveview)
+	RedisURL string
 }
 
 func LoadConfig() *Config {
@@ -76,6 +79,9 @@ func LoadConfig() *Config {
 
 		// CORS
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
+
+		// Redis
+		RedisURL: getEnv("REDIS_URL", ""),
 	}
 }
 

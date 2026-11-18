@@ -32,7 +32,7 @@ export function LiveViewTab({ deviceId }: Props) {
   const isManualDisconnect = useRef(false);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reconnectAttempt = useRef(0);
-  const connectRef = useRef<() => void>(() => {});
+  const connectRef = useRef<() => void>(() => { });
 
   const {
     enabled: remoteEnabled,
@@ -237,14 +237,14 @@ export function LiveViewTab({ deviceId }: Props) {
 
   const cursorStyle: React.CSSProperties | undefined = remoteEnabled
     ? {
-        position: "absolute",
-        left: `${(cursorX / screenInfo.width) * 100}%`,
-        top: `${(cursorY / screenInfo.height) * 100}%`,
-        pointerEvents: "none",
-        zIndex: 50,
-        transform: "translate(-50%, -50%)",
-        transition: "left 0.05s linear, top 0.05s linear",
-      }
+      position: "absolute",
+      left: `${(cursorX / screenInfo.width) * 100}%`,
+      top: `${(cursorY / screenInfo.height) * 100}%`,
+      pointerEvents: "none",
+      zIndex: 50,
+      transform: "translate(-50%, -50%)",
+      transition: "left 0.05s linear, top 0.05s linear",
+    }
     : undefined;
 
   return (

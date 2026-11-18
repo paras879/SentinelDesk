@@ -11,6 +11,7 @@ import (
 
 	"sentineldesk/backend/internal/config"
 	"sentineldesk/backend/internal/database"
+	"sentineldesk/backend/internal/liveview"
 	"sentineldesk/backend/internal/routes"
 	"sentineldesk/backend/internal/scheduler"
 
@@ -23,6 +24,19 @@ import (
 func main() {
 
 	cfg := config.LoadConfig()
+
+	// Redis Pub/Sub for horizontal scaling
+	if cfg.RedisURL != "" {
+		redisHub, err := liveview.NewRedisHub(cfg.RedisURL)
+		if err != nil {
+			log.Printf("⚠️ Redis connection failed: %v — falling back to in-memory hub", err)
+		} else {
+			liveview.GlobalRedisHub = redisHub
+			log.Println("✅ Redis Pub/Sub LiveView hub initialized (multi-instance mode)")
+		}
+	} else {
+		log.Println("ℹ️ REDIS_URL not set — using in-memory LiveView hub (single-instance mode)")
+	}
 
 	// Database Connection
 	if err := database.Connect(cfg); err != nil {

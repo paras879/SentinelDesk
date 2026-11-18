@@ -1,6 +1,7 @@
 package liveview
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -11,6 +12,11 @@ func HandleAgentStream(c *websocket.Conn) {
 	deviceID, ok := c.Locals("deviceID").(string)
 	if !ok || deviceID == "" {
 		return
+	}
+
+	if GlobalRedisHub != nil {
+		GlobalRedisHub.RegisterLocalAgent(deviceID, c)
+		defer GlobalRedisHub.UnregisterLocalAgent(deviceID, c)
 	}
 
 	stream := GlobalHub.GetOrCreate(deviceID)
@@ -99,27 +105,34 @@ func HandleAgentStream(c *websocket.Conn) {
 
 		stream.mu.Lock()
 		stream.LatestFrame = data
-		var failed []string
-		for viewerID, viewer := range stream.Viewers {
-			select {
-			case <-done:
-				stream.mu.Unlock()
-				return
-			default:
-			}
-			if err := viewer.WriteMessage(websocket.BinaryMessage, data); err != nil {
-				viewer.Close()
-				failed = append(failed, viewerID)
-			}
-		}
 		stream.mu.Unlock()
 
-		if len(failed) > 0 {
+		if GlobalRedisHub != nil {
+			_ = GlobalRedisHub.PublishFrame(context.Background(), deviceID, data)
+		} else {
 			stream.mu.Lock()
-			for _, id := range failed {
-				delete(stream.Viewers, id)
+			var failed []string
+			for viewerID, viewer := range stream.Viewers {
+				select {
+				case <-done:
+					stream.mu.Unlock()
+					return
+				default:
+				}
+				if err := viewer.WriteMessage(websocket.BinaryMessage, data); err != nil {
+					viewer.Close()
+					failed = append(failed, viewerID)
+				}
 			}
 			stream.mu.Unlock()
+
+			if len(failed) > 0 {
+				stream.mu.Lock()
+				for _, id := range failed {
+					delete(stream.Viewers, id)
+				}
+				stream.mu.Unlock()
+			}
 		}
 	}
 }

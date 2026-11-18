@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"log"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -50,15 +49,10 @@ func (s *AuthService) Register(name, email, password string) error {
 
 func (s *AuthService) Login(email, password string) (*models.Admin, error) {
 
-	log.Printf("[DEBUG] Login attempt for email: %s", email)
-
 	admin, err := s.repo.GetByEmail(email)
 	if err != nil {
-		log.Printf("[DEBUG] Admin not found for email: %s — err: %v", email, err)
 		return nil, errors.New("invalid email or password")
 	}
-
-	log.Printf("[DEBUG] Admin found: %s (%s)", admin.Name, admin.Email)
 
 	err = bcrypt.CompareHashAndPassword(
 		[]byte(admin.Password),
@@ -66,11 +60,8 @@ func (s *AuthService) Login(email, password string) (*models.Admin, error) {
 	)
 
 	if err != nil {
-		log.Printf("[DEBUG] bcrypt comparison FAILED for %s — err: %v", email, err)
 		return nil, errors.New("invalid email or password")
 	}
-
-	log.Printf("[DEBUG] bcrypt comparison PASSED for %s", email)
 
 	return admin, nil
 }
