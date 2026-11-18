@@ -13,5 +13,5 @@ func SetupAuthRoutes(app *fiber.App) {
 	api := app.Group("/api/v1/auth")
 
 	api.Post("/register", auth.Register)
-	api.Post("/login", auth.Login) // 👈 Ye line add karo
+	api.Post("/login", auth.Login)
 }

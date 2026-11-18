@@ -18,11 +18,7 @@ func SeedAdmin() {
 	result := DB.Where("email = ?", "admin@sentineldesk.com").First(&admin)
 
 	if result.Error == nil {
-		admin.Password = string(hash)
-		if err := DB.Save(&admin).Error; err != nil {
-			log.Fatal("❌ Failed to update admin password:", err)
-		}
-		log.Println("✅ Admin password updated (admin@sentineldesk.com)")
+		log.Println("✅ Admin already exists, skipping seed (admin@sentineldesk.com)")
 		return
 	}
 

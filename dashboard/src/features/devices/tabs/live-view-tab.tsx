@@ -81,10 +81,8 @@ export function LiveViewTab({ deviceId }: Props) {
     if (isManualDisconnect.current) return;
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempt.current), 30000);
     reconnectAttempt.current++;
-    console.log(`[LiveView] scheduling reconnect in ${delay}ms (attempt ${reconnectAttempt.current})`);
     reconnectTimer.current = setTimeout(() => {
       if (isManualDisconnect.current) return;
-      console.log("[LiveView] auto-reconnecting...");
       connectRef.current();
     }, delay);
   }, []);
@@ -98,12 +96,10 @@ export function LiveViewTab({ deviceId }: Props) {
     const wsBase = apiUrl.replace(/^http/, "ws");
     const url = `${wsBase}/ws/live/view/${deviceId}?token=${token}`;
 
-    console.log("[LiveView] connecting to", url);
     setStatus("connecting");
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log("[LiveView] WebSocket opened");
       setStatus("connected");
       reconnectAttempt.current = 0;
     };
@@ -114,7 +110,6 @@ export function LiveViewTab({ deviceId }: Props) {
         const now = Date.now();
 
         if (now - lastFrameLog.current >= 2000) {
-          console.log(`[LiveView] frame #${frameCount.current} size=${event.data.size}`);
           lastFrameLog.current = now;
         }
 
@@ -149,14 +144,12 @@ export function LiveViewTab({ deviceId }: Props) {
     };
 
     ws.onclose = (e) => {
-      console.log(`[LiveView] WebSocket closed code=${e.code} reason=${e.reason}`);
       setStatus("disconnected");
       disableRemote();
       scheduleReconnect();
     };
 
     ws.onerror = () => {
-      console.log("[LiveView] WebSocket error");
       setStatus("disconnected");
     };
 
@@ -168,7 +161,6 @@ export function LiveViewTab({ deviceId }: Props) {
   }, [connect]);
 
   const disconnect = useCallback(() => {
-    console.log("[LiveView] manual disconnect");
     isManualDisconnect.current = true;
     clearReconnect();
     if (wsRef.current) {

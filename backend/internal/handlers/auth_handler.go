@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 
 	"sentineldesk/backend/internal/services"
@@ -63,16 +61,12 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 
 	if err := c.BodyParser(&req); err != nil {
-		log.Printf("[DEBUG] Login body parse error: %v", err)
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	log.Printf("[DEBUG] Login request — Email: %q | Password: %q", req.Email, req.Password)
-
 	if req.Email == "" || req.Password == "" {
-		log.Printf("[DEBUG] Login validation failed — email empty: %v | password empty: %v", req.Email == "", req.Password == "")
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Email and password are required",
 		})
@@ -80,7 +74,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	admin, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
-		log.Printf("[DEBUG] Login service returned error for %q — reason: %v", req.Email, err)
 		return c.Status(401).JSON(fiber.Map{
 			"error": err.Error(),
 		})
